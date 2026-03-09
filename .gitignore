@@ -1,0 +1,36 @@
+# Environment
+.env
+.venv/
+env/
+venv/
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.pyc
+*.class
+*.o
+*.out
+
+# Logs
+*.log
+logs/
+
+# Coverage
+coverage/
+.coverage
+htmlcov/
