@@ -232,119 +232,49 @@ Current signup behavior in the backend:
 
 This happens inside a transaction in [db.js](./src/config/db.js), so if one step fails, the whole signup operation can roll back.
 
-## Folder Guide
+## Project Structure
 
-### `src/config`
+```text
+server/
+├── src/                          # Main backend source code
+│   ├── app.js                    # Creates the Express app and middleware setup
+│   ├── server.js                 # Starts the server
+│   ├── config/                   # Environment and database configuration
+│   ├── constants/                # Shared constant values
+│   ├── controllers/              # Request/response handlers
+│   ├── middleware/               # Reusable Express middleware
+│   ├── models/                   # Backend data models
+│   ├── repositories/             # SQL/database access layer
+│   ├── routes/                   # API route definitions
+│   ├── services/                 # Business logic layer
+│   ├── utils/                    # Shared helper utilities
+│   └── validators/               # Request payload validation
+├── tests/                        # Test-related files
+├── database/                     # Draft SQL/database files
+├── .env.example                  # Example environment variables
+├── package.json                  # Backend package config and scripts
+└── README.md                     # This file
+```
 
-Shared backend configuration.
+### What the main folders are for
 
-- [db.js](./src/config/db.js)
-  PostgreSQL pool, query helper, transaction helper
-- [env.js](./src/config/env.js)
-  environment variable parsing
-
-### `src/routes`
-
-This folder defines API endpoints and maps them to controller functions.
-
-Examples:
-
-- [auth.routes.js](./src/routes/auth.routes.js)
-- [index.js](./src/routes/index.js)
-
-### `src/controllers`
-
-This folder handles Express request/response logic.
-
-Controllers are responsible for:
-
-- receiving request data
-- calling validators
-- calling services
-- returning JSON responses
-
-Main one that is implemented:
-
-- [auth.controller.js](./src/controllers/auth.controller.js)
-
-### `src/validators`
-
-This folder validates request payloads before business logic runs.
-
-Examples:
-
-- [auth.validator.js](./src/validators/auth.validator.js)
-- [profile.validator.js](./src/validators/profile.validator.js)
-
-### `src/services`
-
-This folder contains business logic.
-
-Services coordinate multiple repositories and decide how the backend flow works.
-
-Examples:
-
-- [account.service.js](./src/services/account.service.js)
-  handles signup/signin flow
-- [authentication.service.js](./src/services/authentication.service.js)
-  handles password hashing, password verification, and token creation
-
-### `src/repositories`
-
-This folder contains database access logic.
-
-Repositories are responsible for:
-
-- running SQL
-- keeping SQL out of controllers/services
-- mapping rows into model objects or structured backend objects
-
-Examples:
-
-- [user.repository.js](./src/repositories/user.repository.js)
-- [profile.repository.js](./src/repositories/profile.repository.js)
-- [skill.repository.js](./src/repositories/skill.repository.js)
-- [course.repository.js](./src/repositories/course.repository.js)
-- [user-skill.repository.js](./src/repositories/user-skill.repository.js)
-- [user-course.repository.js](./src/repositories/user-course.repository.js)
-
-### `src/models`
-
-This folder contains JavaScript representations of backend data shapes.
-
-These are not the schema itself. They represent app-side objects like:
-
-- user
-- profile
-- skill
-- course
-
-Examples:
-
-- [user.model.js](./src/models/user.model.js)
-- [profile.model.js](./src/models/profile.model.js)
-
-### `src/middleware`
-
-Reusable Express middleware lives here.
-
-Examples:
-
-- request logging
-- error handling
-
-### `src/utils`
-
-Shared helper utilities that do not belong to one specific feature.
-
-Example:
-
-- [http-error.js](./src/utils/http-error.js)
-
-### `database`
-
-Database-related SQL files live here.
-
-Current file:
-
-- [schema_draft.sql](./database/schema_draft.sql)
+- [src/config](./src/config)
+  Database connection and environment setup
+- [src/routes](./src/routes)
+  Defines API endpoints and maps them to controllers
+- [src/controllers](./src/controllers)
+  Handles incoming requests and outgoing responses
+- [src/validators](./src/validators)
+  Validates request payloads before business logic runs
+- [src/services](./src/services)
+  Contains the main backend business logic
+- [src/repositories](./src/repositories)
+  Handles SQL queries and database reads/writes
+- [src/models](./src/models)
+  Represents backend data objects
+- [src/middleware](./src/middleware)
+  Shared Express middleware like logging and error handling
+- [src/utils](./src/utils)
+  Small helper utilities used in multiple places
+- [database](./database)
+  SQL drafts and database-related files

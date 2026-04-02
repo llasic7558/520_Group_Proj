@@ -36,14 +36,14 @@ git clone <repo-url>
 ### Project Structure
 ```
 Project/
-├── src/              # Source code
-├── tests/            # Test files
-├── docs/             # Documentation
-├── config/           # Configuration files
-├── scripts/          # Utility scripts
-├── .env.example      # Environment variable template
-├── .gitignore        # Git ignore rules
-└── README.md         # This file
+├── five_college_connect/   # Main project code
+│   ├── client/             # Frontend application
+│   └── server/             # Backend application
+├── tests/                  # Test files
+├── docs/                   # Documentation
+├── config/                 # Configuration files
+├── scripts/                # Utility scripts
+└── README.md               # This file
 ```
 
 ### Contributing
