@@ -1,5 +1,5 @@
 # Server
-
+This is not the official server README.md file, it's just something created so someone can grasp a sense of what's currently implemented.
 This folder contains the backend for the 5-College Connector project.
 
 This is meant to help people understand:
@@ -142,7 +142,7 @@ Expected request body:
 
 ```json
 {
-  "email": "student@umass.edu",
+  "email": "stanleyyang@umass.edu",
   "password": "strongpassword"
 }
 ```
@@ -155,7 +155,7 @@ Successful response:
   "authToken": "<token>",
   "user": {
     "id": "uuid",
-    "email": "student@umass.edu",
+    "email": "stanleyyang@umass.edu",
     "username": "stanley",
     "role": "student",
     "emailVerified": false
