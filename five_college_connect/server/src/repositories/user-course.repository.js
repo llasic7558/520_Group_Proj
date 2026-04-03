@@ -1,14 +1,14 @@
 import { query } from "../config/db.js";
 
 export class UserCourseRepository {
-  async createUserCourse({ profileId, courseId, status, grade }, executor = { query }) {
+  async createUserCourse({ userId, profileId, courseId, status, grade }, executor = { query }) {
     const result = await executor.query(
       `
-        INSERT INTO user_courses (profile_id, course_id, status, grade)
-        VALUES ($1, $2, $3, $4)
-        RETURNING user_course_id, profile_id, course_id, status, grade
+        INSERT INTO user_courses (user_id, profile_id, course_id, status, grade)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING user_course_id, user_id, profile_id, course_id, status, grade
       `,
-      [profileId, courseId, status, grade]
+      [userId, profileId, courseId, status, grade]
     );
 
     return result.rows[0];
@@ -19,6 +19,7 @@ export class UserCourseRepository {
       `
         SELECT
           uc.user_course_id,
+          uc.user_id,
           uc.profile_id,
           uc.course_id,
           uc.status,
@@ -36,6 +37,7 @@ export class UserCourseRepository {
 
     return result.rows.map((row) => ({
       userCourseId: row.user_course_id,
+      userId: row.user_id,
       profileId: row.profile_id,
       courseId: row.course_id,
       courseCode: row.course_code,

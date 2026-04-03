@@ -66,6 +66,7 @@ export class AccountService {
 
         await this.userSkillRepository.createUserSkill(
           {
+            userId: createdUser.userId,
             profileId: createdProfile.profileId,
             skillId: savedSkill.skillId,
             proficiencyLevel: skill.proficiencyLevel,
@@ -88,6 +89,7 @@ export class AccountService {
 
         await this.userCourseRepository.createUserCourse(
           {
+            userId: createdUser.userId,
             profileId: createdProfile.profileId,
             courseId: savedCourse.courseId,
             status: course.status,

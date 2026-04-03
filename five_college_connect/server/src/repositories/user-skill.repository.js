@@ -2,22 +2,30 @@ import { query } from "../config/db.js";
 
 export class UserSkillRepository {
   async createUserSkill(
-    { profileId, skillId, proficiencyLevel, isOfferingHelp, isSeekingHelp },
+    { userId, profileId, skillId, proficiencyLevel, isOfferingHelp, isSeekingHelp },
     executor = { query }
   ) {
     const result = await executor.query(
       `
         INSERT INTO user_skills (
+          user_id,
           profile_id,
           skill_id,
           proficiency_level,
           is_offering_help,
           is_seeking_help
         )
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING user_skill_id, profile_id, skill_id, proficiency_level, is_offering_help, is_seeking_help
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING
+          user_skill_id,
+          user_id,
+          profile_id,
+          skill_id,
+          proficiency_level,
+          is_offering_help,
+          is_seeking_help
       `,
-      [profileId, skillId, proficiencyLevel, isOfferingHelp, isSeekingHelp]
+      [userId, profileId, skillId, proficiencyLevel, isOfferingHelp, isSeekingHelp]
     );
 
     return result.rows[0];
@@ -28,6 +36,7 @@ export class UserSkillRepository {
       `
         SELECT
           us.user_skill_id,
+          us.user_id,
           us.profile_id,
           us.skill_id,
           us.proficiency_level,
@@ -45,6 +54,7 @@ export class UserSkillRepository {
 
     return result.rows.map((row) => ({
       userSkillId: row.user_skill_id,
+      userId: row.user_id,
       profileId: row.profile_id,
       skillId: row.skill_id,
       name: row.name,
