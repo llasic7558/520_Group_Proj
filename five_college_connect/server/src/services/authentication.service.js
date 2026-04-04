@@ -1,9 +1,7 @@
 import crypto from "crypto";
+import argon2 from "argon2";
 
 import { env } from "../config/env.js";
-import { createHttpError } from "../utils/http-error.js";
-
-const SCRYPT_KEY_LENGTH = 64;
 
 function createBase64Url(input) {
   return Buffer.from(input)
@@ -13,17 +11,6 @@ function createBase64Url(input) {
     .replace(/=+$/g, "");
 }
 
-function timingSafeCompare(left, right) {
-  const leftBuffer = Buffer.from(left);
-  const rightBuffer = Buffer.from(right);
-
-  if (leftBuffer.length !== rightBuffer.length) {
-    return false;
-  }
-
-  return crypto.timingSafeEqual(leftBuffer, rightBuffer);
-}
-
 export class AuthenticationService {
   isAllowedUniversityEmail(email) {
     const domain = email.split("@")[1]?.toLowerCase();
@@ -31,41 +18,13 @@ export class AuthenticationService {
   }
 
   async hashPassword(password) {
-    const salt = crypto.randomBytes(16).toString("hex");
-
-    const derivedKey = await new Promise((resolve, reject) => {
-      crypto.scrypt(password, salt, SCRYPT_KEY_LENGTH, (error, key) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-
-        resolve(key);
-      });
+    return argon2.hash(password, {
+      type: argon2.argon2id
     });
-
-    return `${salt}:${derivedKey.toString("hex")}`;
   }
 
   async verifyPassword(password, storedHash) {
-    const [salt, expectedHash] = storedHash.split(":");
-
-    if (!salt || !expectedHash) {
-      throw createHttpError(500, "Stored password hash is invalid");
-    }
-
-    const derivedKey = await new Promise((resolve, reject) => {
-      crypto.scrypt(password, salt, SCRYPT_KEY_LENGTH, (error, key) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-
-        resolve(key);
-      });
-    });
-
-    return timingSafeCompare(derivedKey.toString("hex"), expectedHash);
+    return argon2.verify(storedHash, password);
   }
 
   createAuthToken({ userId, email, role }) {

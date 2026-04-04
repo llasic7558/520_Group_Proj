@@ -10,6 +10,51 @@ This is meant to help people understand:
 - what each backend folder is for
 - what the backend currently expects from the database
 
+## Local Setup
+
+If someone wants to run the backend or the integration tests on their own machine, this is the setup I used:
+
+1. install dependencies
+
+```bash
+npm install
+```
+
+2. create a `.env` file in the `server` folder
+
+```bash
+cp .env.example .env
+```
+
+3. update `.env` with a working local PostgreSQL connection string
+
+Example:
+
+```env
+PORT=4000
+NODE_ENV=development
+CLIENT_URL=http://localhost:3000
+DATABASE_URL=postgres://postgres:YOUR_PASSWORD@127.0.0.1:5432/five_college_connect
+DB_SSL=false
+AUTH_TOKEN_SECRET=dev_secret_key
+AUTH_TOKEN_EXPIRES_IN_HOURS=24
+ALLOWED_EMAIL_DOMAINS=umass.edu,amherst.edu,smith.edu,hampshire.edu,mtholyoke.edu
+```
+
+4. load the database schema
+
+```bash
+psql -h 127.0.0.1 -U postgres -d five_college_connect -f database/schema.sql
+```
+
+5. load the seed data
+
+```bash
+psql -h 127.0.0.1 -U postgres -d five_college_connect -f database/seed.sql
+```
+
+The integration tests depend on this setup. In particular, the signin test expects the seeded user data from `seed.sql` to exist.
+
 ## Current Scope
 
 The main backend flow I have implemented so far is:
@@ -201,6 +246,11 @@ The backend returns:
 - `user`
 - `profile`
 
+For local frontend testing, the seeded signin user is:
+
+- email: `emily.rodriguez@umass.edu`
+- password: `DemoPass123!`
+
 ## Notes For Database
 
 The backend currently expects a schema that supports:
@@ -231,6 +281,24 @@ Current signup behavior in the backend:
 6. insert relationship rows for profile courses
 
 This happens inside a transaction in [db.js](./src/config/db.js), so if one step fails, the whole signup operation can roll back.
+
+## Running The Server
+
+To start the backend locally:
+
+```bash
+npm run dev
+```
+
+That starts the Express server using the values in `.env`.
+
+## Tests
+
+There is a separate README in [tests](./tests/README.md) that explains:
+
+- what backend tests currently exist
+- what setup they require
+- how to run them
 
 ## Project Structure
 
