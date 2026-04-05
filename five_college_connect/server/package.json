@@ -1,0 +1,22 @@
+{
+  "name": "five-college-connector-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend scaffold for the 5-College Connector project.",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --env-file=.env --watch src/server.js",
+    "start": "node --env-file=.env src/server.js",
+    "test": "node --env-file=.env --test"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "argon2": "^0.41.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "pg": "^8.16.3"
+  }
+}
