@@ -1,4 +1,4 @@
-## The 5-College Connector (App name subject to change)
+## Five College Connect
 
 ### Overview
 
@@ -12,38 +12,71 @@ The primary users of the platform are students within the Five College community
 - Luka Lasic
 - Stanley Yang 
 
+### Tech stack
+
+| Layer | Technology | Notes |
+| --- | --- | --- |
+| Frontend | React, JavaScript | Component-based UI; shared language with the backend. |
+| Backend | Express.js, Node.js | API in `five_college_connect/server`. |
+| Database | PostgreSQL | Structured data, joins, and referential integrity for profiles and related entities. |
+| Ops | Docker, Redis, AWS (target) | Containers for deployment; Redis for queues/async work; AWS for hosted production. |
+
+The frontend app is a **Vite + React** project under **`five_college_connect/client`** using **JavaScript** (`.jsx`).
+
 ### Getting Started
 
 #### Prerequisites
-<!-- required software/tools -->
+- [Node.js](https://nodejs.org/) LTS (includes `npm`) for the React app and the server
 
-#### Installation
+#### Installation (client)
 ```bash
 git clone <repo-url>
-# Install dependencies ...
+cd 520_Group_Proj
+cd five_college_connect/client
+npm install
 ```
 
-#### Running the Project
+#### Running the Project (frontend dev server)
 ```bash
-# ...
+cd five_college_connect/client
+npm run dev
+```
+Then open the URL printed in the terminal (typically `http://localhost:5173`).
+
+#### Production build (frontend)
+```bash
+cd five_college_connect/client
+npm run build
+npm run preview   # optional: serve the built files locally
+```
+
+#### Lint (frontend)
+```bash
+cd five_college_connect/client
+npm run lint
 ```
 
 #### Running Tests
 ```bash
-# ...
+# (tests not yet configured for client; see five_college_connect/server/tests)
 ```
 
 ### Project Structure
 ```
-Project/
-├── five_college_connect/   # Main project code
-│   ├── client/             # Frontend application
-│   └── server/             # Backend application
-├── tests/                  # Test files
-├── docs/                   # Documentation
-├── config/                 # Configuration files
-├── scripts/                # Utility scripts
-└── README.md               # This file
+520_Group_Proj/
+├── five_college_connect/
+│   ├── client/            # React (Vite) app — JavaScript, component-based UI
+│   │   ├── src/
+│   │   ├── public/
+│   │   ├── index.html
+│   │   └── package.json
+│   └── server/            # Express API, models, database
+├── tests/
+├── docs/
+├── config/
+├── scripts/
+├── .gitignore
+└── README.md
 ```
 
 ### Contributing
