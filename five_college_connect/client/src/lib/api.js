@@ -1,0 +1,66 @@
+// Centralized fetch wrapper. Every API call goes through apiRequest().
+
+import { clearAll, getToken } from './authStorage.js'
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:4000'
+
+export class ApiError extends Error {
+  constructor(message, status, body) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.body = body
+  }
+}
+
+export async function apiRequest(path, { method = 'GET', body } = {}) {
+  const token = getToken()
+
+  const headers = {
+    'Content-Type': 'application/json',
+  }
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  let response
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    })
+  } catch {
+    throw new ApiError(
+      'Could not reach the server. Is it running?',
+      0,
+      null,
+    )
+  }
+
+  // Try to parse JSON; some error responses may not have a body.
+  let payload = null
+  const text = await response.text()
+  if (text) {
+    try {
+      payload = JSON.parse(text)
+    } catch {
+      payload = { message: text }
+    }
+  }
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      // Stale or invalid token — drop it so subsequent navigations
+      // fall through ProtectedRoute back to /login.
+      clearAll()
+    }
+    const message =
+      (payload && (payload.message || payload.error)) ||
+      `Request failed with status ${response.status}`
+    throw new ApiError(message, response.status, payload)
+  }
+
+  return payload
+}
