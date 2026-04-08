@@ -8,27 +8,29 @@ import {
   setUser,
 } from '../lib/authStorage.js'
 import { collegeFromEmailDomain } from '../lib/colleges.js'
+import { setWelcomeFlag } from '../lib/welcomeFlag.js'
 import { AuthContext } from './AuthContext.js'
 
-// Builds the full backend signup payload from just (email, password).
-// Per the spec we keep the form simple and give defaults for everything else.
-function buildSignupPayload(email, password) {
+// Builds the full backend signup payload from the wizard's form state.
+// Everything the wizard doesn't collect is left empty so the user can
+// fill it in later from the Profile page.
+function buildSignupPayload(form) {
   return {
-    email,
-    password,
-    username: email.split('@')[0],
+    email: form.email,
+    password: form.password,
+    username: form.email.split('@')[0],
     role: 'student',
     profile: {
-      college: collegeFromEmailDomain(email),
-      fullName: '',
+      college: collegeFromEmailDomain(form.email),
+      fullName: form.fullName,
+      major: form.major,
+      graduationYear: form.graduationYear ? Number(form.graduationYear) : null,
       bio: '',
-      major: '',
-      graduationYear: null,
+      interests: '',
+      lookingFor: '',
       skills: [],
       courses: [],
-      interests: '',
       availability: '',
-      lookingFor: '',
       profileImageUrl: '',
     },
   }
@@ -59,12 +61,13 @@ export function AuthProvider({ children }) {
   )
 
   const signup = useCallback(
-    async (email, password) => {
+    async (form) => {
       const result = await apiRequest('/api/auth/signup', {
         method: 'POST',
-        body: buildSignupPayload(email, password),
+        body: buildSignupPayload(form),
       })
       persistAuth(result.authToken, result.user)
+      setWelcomeFlag()
       return result.user
     },
     [persistAuth],

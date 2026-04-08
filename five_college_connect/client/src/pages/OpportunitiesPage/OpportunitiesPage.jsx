@@ -3,6 +3,7 @@ import { CATEGORY_IDS, getListingId, mockPostings } from '../../data/postings.js
 import { OpportunityDetail } from '../../components/opportunities/OpportunityDetail.jsx'
 import { PostingList } from '../../components/opportunities/PostingList.jsx'
 import { TopNav } from '../../components/opportunities/TopNav.jsx'
+import WelcomeBanner from '../../components/WelcomeBanner.jsx'
 import './OpportunitiesPage.css'
 
 // main feed: list on the left, detail on the right
@@ -33,6 +34,7 @@ export default function OpportunitiesPage() {
   return (
     <div className="fcc-app">
       <TopNav />
+      <WelcomeBanner />
       <div className="fcc-shell">
         <PostingList
           postings={filtered}
