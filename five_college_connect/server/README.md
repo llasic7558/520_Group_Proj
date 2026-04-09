@@ -107,10 +107,18 @@ Example local base URL:
 http://localhost:4000
 ```
 
+Protected-route note:
+
+- `POST`/`PUT`/`DELETE` routes for listings and applications, plus `PUT /api/profiles/:userId`, now require `Authorization: Bearer <authToken>`
+- the current client already supports this if requests go through [client/src/lib/api.js](../client/src/lib/api.js), which automatically attaches the stored token
+- if any frontend code uses raw `fetch(...)` instead of the shared API helper for protected routes, it will need to add the bearer token manually
+
 ## Notes
 
 - signup creates the user, profile, skills, courses, and join-table rows in one transaction
 - profile data can start mostly blank at signup and be completed later with `PUT /api/profiles/:userId`, like how bio is completed after the sign-up flow
 - auth currently issues a signed token at signin
-- route protection middleware is not fully implemented yet
+- protected write routes now require `Authorization: Bearer <authToken>`
+- listing/profile writes enforce owner-or-admin checks
+- application create/update/delete enforces the signed-in applicant, and application reads are limited to the applicant, the listing owner, or an admin
 - the tests README is in [tests/README.md](./tests/README.md)

@@ -1,5 +1,6 @@
 import { withTransaction } from "../config/db.js";
 import { createHttpError } from "../utils/http-error.js";
+import { ensureOwnerOrAdmin } from "../utils/authorization.js";
 import { ListingAttachmentRepository } from "../repositories/listing-attachment.repository.js";
 import { ListingRepository } from "../repositories/listing.repository.js";
 import { ListingSkillRepository } from "../repositories/listing-skill.repository.js";
@@ -13,10 +14,15 @@ export class ListingService {
     this.skillRepository = new SkillRepository();
   }
 
-  async createListing(payload) {
+  async createListing(payload, currentUser) {
+    const safePayload = {
+      ...payload,
+      createdByUserId: currentUser.userId
+    };
+
     return withTransaction(async (client) => {
-      const listing = await this.listingRepository.createListing(payload, client);
-      return this.buildListingDetails(listing, payload, client);
+      const listing = await this.listingRepository.createListing(safePayload, client);
+      return this.buildListingDetails(listing, safePayload, client);
     });
   }
 
@@ -38,7 +44,7 @@ export class ListingService {
     return this.buildListingDetails(listing);
   }
 
-  async updateListing(listingId, payload) {
+  async updateListing(listingId, payload, currentUser) {
     return withTransaction(async (client) => {
       const existingListing = await this.listingRepository.findById(listingId, client);
 
@@ -46,12 +52,22 @@ export class ListingService {
         throw createHttpError(404, "Listing not found");
       }
 
+      ensureOwnerOrAdmin(currentUser, existingListing.createdByUserId, "listing");
+
       const updatedListing = await this.listingRepository.updateListing(listingId, payload, client);
       return this.buildListingDetails(updatedListing, payload, client, true);
     });
   }
 
-  async deleteListing(listingId) {
+  async deleteListing(listingId, currentUser) {
+    const existingListing = await this.listingRepository.findById(listingId);
+
+    if (!existingListing) {
+      throw createHttpError(404, "Listing not found");
+    }
+
+    ensureOwnerOrAdmin(currentUser, existingListing.createdByUserId, "listing");
+
     const deleted = await this.listingRepository.deleteListing(listingId);
 
     if (!deleted) {

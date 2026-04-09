@@ -4,6 +4,7 @@ import { ProfileRepository } from "../repositories/profile.repository.js";
 import { SkillRepository } from "../repositories/skill.repository.js";
 import { UserCourseRepository } from "../repositories/user-course.repository.js";
 import { UserSkillRepository } from "../repositories/user-skill.repository.js";
+import { ensureOwnerOrAdmin } from "../utils/authorization.js";
 import { createHttpError } from "../utils/http-error.js";
 
 export class ProfileService {
@@ -25,7 +26,9 @@ export class ProfileService {
     return this.buildFullProfile(profile, executor);
   }
 
-  async updateProfile(userId, payload) {
+  async updateProfile(userId, payload, currentUser) {
+    ensureOwnerOrAdmin(currentUser, userId, "profile");
+
     return withTransaction(async (client) => {
       const existingProfile = await this.profileRepository.findByUserId(userId, client);
 

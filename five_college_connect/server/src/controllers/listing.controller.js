@@ -23,8 +23,11 @@ export async function createListing(req, res, next) {
     //   skills: [{ name, category, requirementType }],
     //   attachments: [{ fileUrl, fileType }]
     // }
-    const payload = validateCreateListingPayload(req.body);
-    const listing = await listingService.createListing(payload);
+    const payload = validateCreateListingPayload({
+      ...req.body,
+      createdByUserId: req.user.userId
+    });
+    const listing = await listingService.createListing(payload, req.user);
 
     res.status(201).json({
       message: "Listing created successfully",
@@ -67,7 +70,7 @@ export async function getListing(req, res, next) {
 export async function updateListing(req, res, next) {
   try {
     const payload = validateUpdateListingPayload(req.body);
-    const listing = await listingService.updateListing(req.params.listingId, payload);
+    const listing = await listingService.updateListing(req.params.listingId, payload, req.user);
 
     res.status(200).json({
       message: "Listing updated successfully",
@@ -80,7 +83,7 @@ export async function updateListing(req, res, next) {
 
 export async function deleteListing(req, res, next) {
   try {
-    await listingService.deleteListing(req.params.listingId);
+    await listingService.deleteListing(req.params.listingId, req.user);
 
     res.status(200).json({
       message: "Listing deleted successfully"

@@ -14,7 +14,7 @@ export async function createProfile(_req, res) {
 export async function updateProfile(req, res, next) {
   try {
     const payload = validateProfilePayload(req.body || {});
-    const profile = await profileService.updateProfile(req.params.userId, payload);
+    const profile = await profileService.updateProfile(req.params.userId, payload, req.user);
 
     res.status(200).json({
       message: "Profile updated successfully",

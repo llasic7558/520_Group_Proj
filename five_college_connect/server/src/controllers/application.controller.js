@@ -8,8 +8,11 @@ const applicationService = new ApplicationService();
 
 export async function createApplication(req, res, next) {
   try {
-    const payload = validateCreateApplicationPayload(req.body);
-    const application = await applicationService.createApplication(payload);
+    const payload = validateCreateApplicationPayload({
+      ...req.body,
+      applicantUserId: req.user.userId
+    });
+    const application = await applicationService.createApplication(payload, req.user);
 
     res.status(201).json({
       message: "Application created successfully",
@@ -27,7 +30,7 @@ export async function listApplications(req, res, next) {
       applicantUserId: req.query.applicantUserId,
       status: req.query.status,
       limit: req.query.limit
-    });
+    }, req.user);
 
     res.status(200).json({
       items
@@ -39,7 +42,10 @@ export async function listApplications(req, res, next) {
 
 export async function getApplication(req, res, next) {
   try {
-    const application = await applicationService.getApplicationById(req.params.applicationId);
+    const application = await applicationService.getApplicationById(
+      req.params.applicationId,
+      req.user
+    );
 
     res.status(200).json({
       application
@@ -52,7 +58,11 @@ export async function getApplication(req, res, next) {
 export async function updateApplication(req, res, next) {
   try {
     const payload = validateUpdateApplicationPayload(req.body);
-    const application = await applicationService.updateApplication(req.params.applicationId, payload);
+    const application = await applicationService.updateApplication(
+      req.params.applicationId,
+      payload,
+      req.user
+    );
 
     res.status(200).json({
       message: "Application updated successfully",
@@ -65,7 +75,7 @@ export async function updateApplication(req, res, next) {
 
 export async function deleteApplication(req, res, next) {
   try {
-    await applicationService.deleteApplication(req.params.applicationId);
+    await applicationService.deleteApplication(req.params.applicationId, req.user);
 
     res.status(200).json({
       message: "Application deleted successfully"

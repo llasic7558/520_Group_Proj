@@ -7,13 +7,14 @@ import {
   listListings,
   updateListing
 } from "../controllers/listing.controller.js";
+import { requireAuth } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-router.post("/", createListing);
+router.post("/", requireAuth, createListing);
 router.get("/", listListings);
 router.get("/:listingId", getListing);
-router.put("/:listingId", updateListing);
-router.delete("/:listingId", deleteListing);
+router.put("/:listingId", requireAuth, updateListing);
+router.delete("/:listingId", requireAuth, deleteListing);
 
 export default router;

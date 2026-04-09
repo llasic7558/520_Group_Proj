@@ -7,13 +7,14 @@ import {
   listApplications,
   updateApplication
 } from "../controllers/application.controller.js";
+import { requireAuth } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-router.post("/", createApplication);
-router.get("/", listApplications);
-router.get("/:applicationId", getApplication);
-router.put("/:applicationId", updateApplication);
-router.delete("/:applicationId", deleteApplication);
+router.post("/", requireAuth, createApplication);
+router.get("/", requireAuth, listApplications);
+router.get("/:applicationId", requireAuth, getApplication);
+router.put("/:applicationId", requireAuth, updateApplication);
+router.delete("/:applicationId", requireAuth, deleteApplication);
 
 export default router;
