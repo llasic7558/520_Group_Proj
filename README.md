@@ -19,62 +19,160 @@ The primary users of the platform are students within the Five College community
 | Frontend | React, JavaScript | Component-based UI; shared language with the backend. |
 | Backend | Express.js, Node.js | API in `five_college_connect/server`. |
 | Database | PostgreSQL | Structured data, joins, and referential integrity for profiles and related entities. |
-| Ops | Docker, Redis, AWS (target) | Containers for deployment; Redis for queues/async work; AWS for hosted production. |
+| Ops | Docker Compose, AWS (target) | Containers orchestrate Postgres + server + client locally; AWS for hosted production(in the future). |
 
-The frontend app is a **Vite + React** project under **`five_college_connect/client`** using **JavaScript** (`.jsx`).
+The frontend app is a **Vite + React** project under **`five_college_connect/client`** using **JavaScript** (`.jsx`). The backend is an **Express 5 + PostgreSQL** service under **`five_college_connect/server`** (Node 20+).
 
 ### Getting Started
 
-#### Prerequisites
-- [Node.js](https://nodejs.org/) LTS (includes `npm`) for the React app and the server
+There are two supported ways to run this project. Pick the one that matches what you're trying to do.
 
-#### Installation (client)
+| I want to… | Use this path |
+| --- | --- |
+| **Just see it run** (demo, evaluate, show someone) | [Users — one-command full stack](#users--one-command-full-stack) |
+| **Develop it** (edit code, hot reload, run tests) | [Developers — daily development](#developers--daily-development) |
+
+Both paths share the same Docker Compose file and produce the same running app at `http://localhost:3000`. The only difference is *where* the Node processes run: inside containers (user path) or on your host machine (developer path).
+
+---
+
+#### Users — one-command full stack
+
+**Prerequisites**
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or any Docker engine + Docker Compose v2)
+
+**First-time setup**
 ```bash
 git clone <repo-url>
-cd 520_Group_Proj
-cd five_college_connect/client
-npm install
+cd Project
 ```
 
-#### Running the Project (frontend dev server)
+**Run it**
 ```bash
-cd five_college_connect/client
+docker compose --profile full up
+```
+
+Then open **http://localhost:3000** in your browser. The first run takes a minute or two because Docker pulls Postgres and builds the server/client images. Subsequent runs are fast.
+
+**Try it out with seeded credentials**
+The database ships with demo users. Log in at `http://localhost:3000/login` with:
+- Email: `emily.rodriguez@umass.edu`
+- Password: `DemoPass123!`
+
+Or sign up a new account using any `@umass.edu`, `@amherst.edu`, `@smith.edu`, `@hampshire.edu`, or `@mtholyoke.edu` email.
+
+**Stop everything**
+```bash
+docker compose --profile full down
+```
+
+**Reset the database** (wipe all data, re-run schema + seed)
+```bash
+docker compose down -v && docker compose --profile full up
+```
+
+---
+
+#### Developers — daily development
+
+Use this path when you're editing code. It runs Postgres in Docker (so you don't have to install/configure it locally) but runs the Express server and Vite client directly on your host, which gives you instant hot reload and easy debugging.
+
+**Prerequisites**
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — used only for Postgres
+- [Node.js 20+](https://nodejs.org/) — required by the server's native `--env-file` / `--watch` flags
+- Nothing else. You do **not** need to install Postgres locally.
+
+**First-time setup**
+```bash
+git clone <repo-url>
+cd Project
+
+# Copy the env templates
+cp five_college_connect/server/.env.example five_college_connect/server/.env
+cp five_college_connect/client/.env.example five_college_connect/client/.env
+
+# Install deps for the root, server, and client in one shot
+npm run install:all
+```
+
+**Run it**
+```bash
 npm run dev
 ```
-Then open the URL printed in the terminal (typically `http://localhost:5173`).
 
-#### Production build (frontend)
+What this does:
+1. Starts the Postgres container (waits for its healthcheck to pass)
+2. Starts the Express server (`five_college_connect/server`) on port 4000 with `--watch` hot reload
+3. Starts the Vite dev server (`five_college_connect/client`) on port 3000 with hot module reload
+
+Both Node processes stream their logs into your terminal with `server` (blue) and `client` (green) prefixes. Ctrl+C cleanly stops both.
+
+Then open **http://localhost:3000** in your browser.
+
+**Useful scripts (run from the repo root)**
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Daily dev loop: Postgres in Docker, server + client on host with hot reload |
+| `npm run up` | Full Docker stack (same as the user path above) |
+| `npm run down` | Stop the Docker Postgres container |
+| `npm run db:up` | Start only Postgres in Docker (e.g. before running server tests) |
+| `npm run db:down` | Stop Postgres without removing the volume |
+| `npm run db:reset` | Drop the Postgres volume and re-init schema + seed |
+
+**Server tests** (Node's built-in test runner; hits the real Dockerized DB)
+```bash
+npm run db:up                          # make sure Postgres is running
+cd five_college_connect/server
+npm test
+```
+
+**Client lint**
+```bash
+cd five_college_connect/client
+npm run lint
+```
+
+**Client production build**
 ```bash
 cd five_college_connect/client
 npm run build
 npm run preview   # optional: serve the built files locally
 ```
 
-#### Lint (frontend)
-```bash
-cd five_college_connect/client
-npm run lint
-```
+---
 
-#### Running Tests
-```bash
-# (tests not yet configured for client; see five_college_connect/server/tests)
-```
+#### Ports and URLs
+
+| Service | URL / Port | Where it runs |
+| --- | --- | --- |
+| Client (Vite) | `http://localhost:3000` | Host (dev path) or `fcc-client` container (user path) |
+| Server (Express) | `http://localhost:4000` | Host (dev path) or `fcc-server` container (user path) |
+| Postgres | `localhost:5434` | `fcc-postgres` container (both paths) |
+
+#### Troubleshooting
+
+- **`port is already allocated` on startup** — something on your machine is already bound to 3000, 4000, or 5434. Stop it, or edit the host-side port in `docker-compose.yml`.
+- **Signin returns "Invalid email or password" for a seeded user** — the seed didn't load. Run `npm run db:reset` and try again.
+- **Server tests fail with DB connection errors** — make sure Postgres is up (`npm run db:up`) and `five_college_connect/server/.env` has `DATABASE_URL=postgres://postgres:postgres@localhost:5434/five_college_connect`.
 
 ### Project Structure
 ```
-520_Group_Proj/
+Project/
+├── docker-compose.yml      # Postgres + server + client (server/client behind `full` profile)
+├── package.json            # Root dev scripts (npm run dev, npm run up, npm run db:*)
 ├── five_college_connect/
-│   ├── client/            # React (Vite) app — JavaScript, component-based UI
+│   ├── client/             # React (Vite) app — JavaScript, component-based UI
 │   │   ├── src/
-│   │   ├── public/
-│   │   ├── index.html
+│   │   ├── Dockerfile
 │   │   └── package.json
-│   └── server/            # Express API, models, database
-├── tests/
+│   └── server/             # Express API, services, repositories, PostgreSQL
+│       ├── src/
+│       ├── database/       # schema.sql + seed.sql (auto-loaded into Postgres on first `up`)
+│       ├── tests/          # node:test integration tests (hit the real Dockerized DB)
+│       ├── Dockerfile
+│       └── package.json
 ├── docs/
-├── config/
-├── scripts/
 ├── .gitignore
 └── README.md
 ```
