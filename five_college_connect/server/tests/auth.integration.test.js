@@ -176,4 +176,3 @@ test("POST /api/auth/signup creates a user, profile, skills, and courses", async
   assert.equal(savedSkillLinkResult.rowCount, 1);
   assert.equal(savedCourseLinkResult.rowCount, 1);
 });
-

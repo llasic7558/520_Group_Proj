@@ -64,4 +64,8 @@ export class UserSkillRepository {
       isSeekingHelp: row.is_seeking_help
     }));
   }
+
+  async deleteByProfileId(profileId, executor = { query }) {
+    await executor.query("DELETE FROM user_skills WHERE profile_id = $1", [profileId]);
+  }
 }
