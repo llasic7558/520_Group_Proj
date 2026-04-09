@@ -1,24 +1,34 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import app from "../../src/app.js";
-import { query, testDatabaseConnection } from "../../src/config/db.js";
+import app from "../src/app.js";
+import { query, testDatabaseConnection } from "../src/config/db.js";
 
 const TEST_TITLE = "Integration Test Listing";
 const TEST_TITLE_GET = "Integration Test Listing Get";
 const TEST_TITLE_UPDATE = "Integration Test Listing Update";
 const TEST_TITLE_DELETE = "Integration Test Listing Delete";
-const TEST_USER_ID = "a1000000-0000-0000-0000-000000000001";
+const SEEDED_PASSWORD = "DemoPass123!";
+const OWNER_EMAIL = "emily.rodriguez@umass.edu";
+const OTHER_USER_EMAIL = "michael.chen@umass.edu";
 
 let server;
 let baseUrl;
+let ownerToken;
+let otherUserToken;
 
-async function requestJson(path, { method = "GET", body } = {}) {
+async function requestJson(path, { method = "GET", body, token } = {}) {
+  const headers = {
+    "Content-Type": "application/json"
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${baseUrl}${path}`, {
     method,
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers,
     body: body ? JSON.stringify(body) : undefined
   });
 
@@ -30,15 +40,29 @@ async function requestJson(path, { method = "GET", body } = {}) {
   };
 }
 
+async function signIn(email, password) {
+  const response = await requestJson("/api/auth/signin", {
+    method: "POST",
+    body: {
+      email,
+      password
+    }
+  });
+
+  assert.equal(response.status, 200);
+
+  return response.body.authToken;
+}
+
 async function deleteTestListings() {
   await query("DELETE FROM listings WHERE title LIKE $1", ["Integration Test Listing%"]);
 }
 
-async function createTestListing(title = TEST_TITLE) {
+async function createTestListing(title = TEST_TITLE, token = ownerToken) {
   return requestJson("/api/listings", {
     method: "POST",
+    token,
     body: {
-      createdByUserId: TEST_USER_ID,
       title,
       description: "Created by integration test",
       category: "project",
@@ -75,6 +99,8 @@ test.before(async () => {
   baseUrl = `http://127.0.0.1:${address.port}`;
 
   await deleteTestListings();
+  ownerToken = await signIn(OWNER_EMAIL, SEEDED_PASSWORD);
+  otherUserToken = await signIn(OTHER_USER_EMAIL, SEEDED_PASSWORD);
 });
 
 test.after(async () => {
@@ -92,6 +118,18 @@ test.after(async () => {
       });
     });
   }
+});
+
+test("POST /api/listings requires authentication", async () => {
+  const response = await requestJson("/api/listings", {
+    method: "POST",
+    body: {
+      title: TEST_TITLE,
+      category: "project"
+    }
+  });
+
+  assert.equal(response.status, 401);
 });
 
 test("POST /api/listings creates a listing with skills and attachments", async () => {
@@ -131,6 +169,7 @@ test("PUT /api/listings/:listingId updates listing fields and related rows", asy
 
   const response = await requestJson(`/api/listings/${listingId}`, {
     method: "PUT",
+    token: ownerToken,
     body: {
       title: `${TEST_TITLE_UPDATE} Edited`,
       description: "Updated by integration test",
@@ -168,12 +207,38 @@ test("PUT /api/listings/:listingId updates listing fields and related rows", asy
   assert.equal(response.body.listing.attachments[0].fileType, "application/pdf");
 });
 
+test("PUT /api/listings/:listingId rejects updates from a different user", async () => {
+  const createdResponse = await createTestListing(`${TEST_TITLE_UPDATE} Other User`);
+  const listingId = createdResponse.body.listing.listingId;
+
+  const response = await requestJson(`/api/listings/${listingId}`, {
+    method: "PUT",
+    token: otherUserToken,
+    body: {
+      title: "Not allowed",
+      description: "Should fail",
+      category: "job",
+      contactMethod: "email",
+      contactDetails: "nope@example.com",
+      bannerImageUrl: "",
+      customColor: "",
+      status: "open",
+      expirationDate: null,
+      skills: [],
+      attachments: []
+    }
+  });
+
+  assert.equal(response.status, 403);
+});
+
 test("DELETE /api/listings/:listingId removes the listing", async () => {
   const createdResponse = await createTestListing(TEST_TITLE_DELETE);
   const listingId = createdResponse.body.listing.listingId;
 
   const deleteResponse = await requestJson(`/api/listings/${listingId}`, {
-    method: "DELETE"
+    method: "DELETE",
+    token: ownerToken
   });
 
   assert.equal(deleteResponse.status, 200);

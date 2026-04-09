@@ -2,10 +2,6 @@
 
 This folder contains the current backend test suite.
 
-The implemented feature checks are currently organized under:
-
-- [regression](./regression)
-
 ## What is covered
 
 - auth flow
@@ -14,6 +10,7 @@ The implemented feature checks are currently organized under:
   - signin invalid password
   - signup success
 - listings flow
+  - create listing requires auth
   - create listing
   - get listings
   - get one listing
@@ -23,6 +20,7 @@ The implemented feature checks are currently organized under:
   - get profile
   - update profile
 - applications flow
+  - create application requires auth
   - create application
   - get applications
   - get one application
@@ -38,7 +36,7 @@ Make sure:
 - `DATABASE_URL` in `.env` points to a working PostgreSQL database
 - `database/schema.sql` and `database/seed.sql` have already been loaded
 
-The regression tests use the real Express app and the real PostgreSQL database from `.env`.
+The integration tests use the real Express app and the real PostgreSQL database from `.env`.
 
 ## Run tests
 
@@ -57,25 +55,9 @@ Option 2:
 npm --prefix five_college_connect/server test
 ```
 
-## Run regression tests
-
-If you specifically want the regression suite:
-
-Option 1:
-
-```bash
-cd five_college_connect/server
-npm run test:regression
-```
-
-Option 2:
-
-```bash
-npm --prefix five_college_connect/server run test:regression
-```
-
 ## Notes
 
 - the signin test uses the seeded user `emily.rodriguez@umass.edu`
 - the seeded password is `DemoPass123!`
 - the signup, listing, profile, and application tests create temporary test data and clean it up when needed
+- the protected-route tests also check that the wrong user cannot update someone else's listing, profile, or application

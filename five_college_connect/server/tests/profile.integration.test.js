@@ -1,22 +1,32 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import app from "../../src/app.js";
-import { query, testDatabaseConnection } from "../../src/config/db.js";
+import app from "../src/app.js";
+import { query, testDatabaseConnection } from "../src/config/db.js";
 
 const TEST_EMAIL = "stanley.profile.test@umass.edu";
 const TEST_PASSWORD = "StanleyProfile123!";
+const SEEDED_PASSWORD = "DemoPass123!";
+const OTHER_USER_EMAIL = "michael.chen@umass.edu";
 
 let server;
 let baseUrl;
 let testUserId;
+let testUserToken;
+let otherUserToken;
 
-async function requestJson(path, { method = "GET", body } = {}) {
+async function requestJson(path, { method = "GET", body, token } = {}) {
+  const headers = {
+    "Content-Type": "application/json"
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${baseUrl}${path}`, {
     method,
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers,
     body: body ? JSON.stringify(body) : undefined
   });
 
@@ -26,6 +36,20 @@ async function requestJson(path, { method = "GET", body } = {}) {
     status: response.status,
     body: payload
   };
+}
+
+async function signIn(email, password) {
+  const response = await requestJson("/api/auth/signin", {
+    method: "POST",
+    body: {
+      email,
+      password
+    }
+  });
+
+  assert.equal(response.status, 200);
+
+  return response.body.authToken;
 }
 
 async function deleteTestUser() {
@@ -70,6 +94,8 @@ test.before(async () => {
   });
 
   testUserId = signupResponse.body.user.id;
+  testUserToken = signupResponse.body.authToken;
+  otherUserToken = await signIn(OTHER_USER_EMAIL, SEEDED_PASSWORD);
 });
 
 test.after(async () => {
@@ -101,6 +127,7 @@ test("GET /api/profiles/:userId returns the full profile", async () => {
 test("PUT /api/profiles/:userId updates profile fields and relationships", async () => {
   const response = await requestJson(`/api/profiles/${testUserId}`, {
     method: "PUT",
+    token: testUserToken,
     body: {
       fullName: "Stanley Profile Test",
       bio: "Updated by integration test",
@@ -139,4 +166,26 @@ test("PUT /api/profiles/:userId updates profile fields and relationships", async
   assert.equal(response.body.profile.skills[0].name, "Python");
   assert.equal(response.body.profile.courses.length, 1);
   assert.equal(response.body.profile.courses[0].courseCode, "CS 383");
+});
+
+test("PUT /api/profiles/:userId rejects updates from a different user", async () => {
+  const response = await requestJson(`/api/profiles/${testUserId}`, {
+    method: "PUT",
+    token: otherUserToken,
+    body: {
+      fullName: "Stanley Profile Test",
+      bio: "Should not update",
+      college: "UMass Amherst",
+      major: "",
+      graduationYear: null,
+      interests: "",
+      availability: "",
+      lookingFor: "",
+      profileImageUrl: "",
+      skills: [],
+      courses: []
+    }
+  });
+
+  assert.equal(response.status, 403);
 });
