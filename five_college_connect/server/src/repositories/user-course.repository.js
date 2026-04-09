@@ -47,4 +47,8 @@ export class UserCourseRepository {
       grade: row.grade
     }));
   }
+
+  async deleteByProfileId(profileId, executor = { query }) {
+    await executor.query("DELETE FROM user_courses WHERE profile_id = $1", [profileId]);
+  }
 }

@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import app from "../src/app.js";
-import { query, testDatabaseConnection } from "../src/config/db.js";
+import app from "../../src/app.js";
+import { query, testDatabaseConnection } from "../../src/config/db.js";
 
 const TEST_TITLE = "Integration Test Listing";
 const TEST_TITLE_GET = "Integration Test Listing Get";

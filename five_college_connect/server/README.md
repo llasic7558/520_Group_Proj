@@ -9,14 +9,23 @@ What is currently implemented:
 - auth flow
   - `POST /api/auth/signup`
   - `POST /api/auth/signin`
+- profile flow
+  - `GET /api/profiles/:userId`
+  - `PUT /api/profiles/:userId`
 - listings flow
   - `POST /api/listings`
   - `GET /api/listings`
   - `GET /api/listings/:listingId`
   - `PUT /api/listings/:listingId`
   - `DELETE /api/listings/:listingId`
+- applications flow
+  - `POST /api/applications`
+  - `GET /api/applications`
+  - `GET /api/applications/:applicationId`
+  - `PUT /api/applications/:applicationId`
+  - `DELETE /api/applications/:applicationId`
 - PostgreSQL connection setup
-- integration tests for auth and listings
+- integration tests for auth, profiles, listings, and applications
 
 ## Backend flow
 
@@ -79,11 +88,18 @@ The client should call these endpoints:
 
 - signup: `POST /api/auth/signup`
 - signin: `POST /api/auth/signin`
+- get profile: `GET /api/profiles/:userId`
+- update profile: `PUT /api/profiles/:userId`
 - get listings: `GET /api/listings`
 - get one listing: `GET /api/listings/:listingId`
 - create listing: `POST /api/listings`
 - update listing: `PUT /api/listings/:listingId`
 - delete listing: `DELETE /api/listings/:listingId`
+- create application: `POST /api/applications`
+- get applications: `GET /api/applications`
+- get one application: `GET /api/applications/:applicationId`
+- update application: `PUT /api/applications/:applicationId`
+- delete application: `DELETE /api/applications/:applicationId`
 
 Example local base URL:
 
@@ -94,6 +110,7 @@ http://localhost:4000
 ## Notes
 
 - signup creates the user, profile, skills, courses, and join-table rows in one transaction
+- profile data can start mostly blank at signup and be completed later with `PUT /api/profiles/:userId`, like how bio is completed after the sign-up flow
 - auth currently issues a signed token at signin
 - route protection middleware is not fully implemented yet
 - the tests README is in [tests/README.md](./tests/README.md)

@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import app from "../src/app.js";
-import { query, testDatabaseConnection } from "../src/config/db.js";
+import app from "../../src/app.js";
+import { query, testDatabaseConnection } from "../../src/config/db.js";
 
 const TEST_EMAIL = "stanley.test.auth@umass.edu";
 const TEST_USERNAME = "stanley_test_auth";
@@ -176,4 +176,3 @@ test("POST /api/auth/signup creates a user, profile, skills, and courses", async
   assert.equal(savedSkillLinkResult.rowCount, 1);
   assert.equal(savedCourseLinkResult.rowCount, 1);
 });
-

@@ -1,6 +1,10 @@
 # Tests
 
-This folder contains the current backend integration tests.
+This folder contains the current backend test suite.
+
+The implemented feature checks are currently organized under:
+
+- [regression](./regression)
 
 ## What is covered
 
@@ -15,6 +19,15 @@ This folder contains the current backend integration tests.
   - get one listing
   - update listing
   - delete listing
+- profile flow
+  - get profile
+  - update profile
+- applications flow
+  - create application
+  - get applications
+  - get one application
+  - update application
+  - delete application
 
 ## Before running tests
 
@@ -25,9 +38,11 @@ Make sure:
 - `DATABASE_URL` in `.env` points to a working PostgreSQL database
 - `database/schema.sql` and `database/seed.sql` have already been loaded
 
-The tests use the real Express app and the real PostgreSQL database from `.env`.
+The regression tests use the real Express app and the real PostgreSQL database from `.env`.
 
 ## Run tests
+
+To generally run all tests in the `tests` folder:
 
 Option 1:
 
@@ -42,8 +57,25 @@ Option 2:
 npm --prefix five_college_connect/server test
 ```
 
+## Run regression tests
+
+If you specifically want the regression suite:
+
+Option 1:
+
+```bash
+cd five_college_connect/server
+npm run test:regression
+```
+
+Option 2:
+
+```bash
+npm --prefix five_college_connect/server run test:regression
+```
+
 ## Notes
 
 - the signin test uses the seeded user `emily.rodriguez@umass.edu`
 - the seeded password is `DemoPass123!`
-- the signup and listing tests create temporary test data and clean it up
+- the signup, listing, profile, and application tests create temporary test data and clean it up when needed
