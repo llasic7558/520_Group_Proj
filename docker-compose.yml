@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fcc-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: five_college_connect
+    # Host port is 5434 to avoid conflicting with local Postgres installs
+    # already listening on 5432 (postgresql@14) and 5433 (postgresql@17).
+    # The container itself still listens on 5432, so other compose services
+    # (e.g. the `server` container) talk to `postgres:5432` unchanged.
+    # Host tools (psql, GUIs, the daily-dev `npm run dev` path) use 5434.
+    ports:
+      - "5434:5432"
+    volumes:
+      - fcc-pgdata:/var/lib/postgresql/data
+      - ./five_college_connect/server/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./five_college_connect/server/database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d five_college_connect"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    profiles: ["full"]
+    build:
+      context: ./five_college_connect/server
+    container_name: fcc-server
+    environment:
+      PORT: 4000
+      NODE_ENV: development
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/five_college_connect
+      DB_SSL: "false"
+      AUTH_TOKEN_SECRET: dev_only_change_me
+      AUTH_TOKEN_EXPIRES_IN_HOURS: "24"
+      ALLOWED_EMAIL_DOMAINS: umass.edu,amherst.edu,smith.edu,hampshire.edu,mtholyoke.edu
+      CLIENT_URL: http://localhost:3000
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  client:
+    profiles: ["full"]
+    build:
+      context: ./five_college_connect/client
+    container_name: fcc-client
+    environment:
+      VITE_API_URL: http://localhost:4000
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "3000:3000"
+    depends_on:
+      server:
+        condition: service_healthy
+
+volumes:
+  fcc-pgdata:
