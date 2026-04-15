@@ -76,6 +76,16 @@ psql -h 127.0.0.1 -U postgres -d five_college_connect -f database/schema.sql
 psql -h 127.0.0.1 -U postgres -d five_college_connect -f database/seed.sql
 ```
 
+If you already created your local database before a schema change, run any needed migration files too.
+For example, after loading your `.env`:
+
+```bash
+set -a
+source .env
+set +a
+psql "$DATABASE_URL" -f database/migrations/2026-04-14-drop-username-unique.sql
+```
+
 5. start the server
 
 ```bash

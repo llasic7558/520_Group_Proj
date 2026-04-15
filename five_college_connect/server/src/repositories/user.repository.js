@@ -46,28 +46,6 @@ export class UserRepository {
     return result.rows[0] ? new User(result.rows[0]) : null;
   }
 
-  async findByUsername(username, executor = { query }) {
-    const result = await executor.query(
-      `
-        SELECT
-          user_id,
-          username,
-          email,
-          password_hash,
-          role,
-          email_verified,
-          teacher_badge,
-          created_at,
-          status
-        FROM users
-        WHERE username = $1
-      `,
-      [username]
-    );
-
-    return result.rows[0] ? new User(result.rows[0]) : null;
-  }
-
   async findById(id, executor = { query }) {
     const result = await executor.query(
       `
