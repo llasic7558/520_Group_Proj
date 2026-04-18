@@ -1,5 +1,7 @@
 import { ApplicationRepository } from "../repositories/application.repository.js";
+import { withTransaction } from "../config/db.js";
 import { ListingRepository } from "../repositories/listing.repository.js";
+import { NotificationRepository } from "../repositories/notification.repository.js";
 import { ensureOwnerOrAdmin, isAdmin } from "../utils/authorization.js";
 import { createHttpError } from "../utils/http-error.js";
 
@@ -7,12 +9,34 @@ export class ApplicationService {
   constructor() {
     this.applicationRepository = new ApplicationRepository();
     this.listingRepository = new ListingRepository();
+    this.notificationRepository = new NotificationRepository();
   }
 
   async createApplication(payload, currentUser) {
-    return this.applicationRepository.createApplication({
-      ...payload,
-      applicantUserId: currentUser.userId
+    return withTransaction(async (client) => {
+      const listing = await this.listingRepository.findById(payload.listingId, client);
+
+      if (!listing) {
+        throw createHttpError(404, "Listing not found");
+      }
+
+      const application = await this.applicationRepository.createApplication({
+        ...payload,
+        applicantUserId: currentUser.userId
+      }, client);
+
+      if (listing.createdByUserId !== currentUser.userId) {
+        await this.notificationRepository.createNotification(
+          {
+            userId: listing.createdByUserId,
+            type: "new_application",
+            message: `Someone applied to your listing "${listing.title}"`
+          },
+          client
+        );
+      }
+
+      return application;
     });
   }
 

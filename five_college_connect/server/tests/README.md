@@ -28,6 +28,12 @@ This folder contains the current backend test suite.
   - get one application
   - update application
   - delete application
+- notifications flow
+  - get notifications requires auth
+  - create notification when an application is submitted
+  - filter unread notifications
+  - mark one notification as read
+  - mark all notifications as read
 
 ## Before running tests
 
@@ -59,7 +65,7 @@ npm --prefix five_college_connect/server test
 
 ## Notes
 
-- the signin test uses the seeded user `emily.rodriguez@umass.edu`
+- the signin test uses seeded users like `emily.rodriguez@umass.edu` and `sarah.johnson@umass.edu`
 - the seeded password is `DemoPass123!`
-- the signup, listing, search, profile, and application tests create temporary test data and clean it up when needed
+- the signup, listing, search, profile, application, and notification tests create temporary test data and clean it up when needed
 - the protected-route tests also check that the wrong user cannot update someone else's listing, profile, or application

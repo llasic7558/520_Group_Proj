@@ -24,8 +24,12 @@ What is currently implemented:
   - `GET /api/applications/:applicationId`
   - `PUT /api/applications/:applicationId`
   - `DELETE /api/applications/:applicationId`
- - PostgreSQL connection setup
-- API tests for auth, profiles, listings, applications, and search
+- notifications flow
+  - `GET /api/notifications`
+  - `PATCH /api/notifications/:notificationId/read`
+  - `PATCH /api/notifications/read-all`
+- PostgreSQL connection setup
+- API tests for auth, profiles, listings, applications, search, and notifications
 
 ## Backend flow
 
@@ -111,6 +115,9 @@ The client should call these endpoints:
 - get one application: `GET /api/applications/:applicationId`
 - update application: `PUT /api/applications/:applicationId`
 - delete application: `DELETE /api/applications/:applicationId`
+- get notifications: `GET /api/notifications`
+- mark one notification as read: `PATCH /api/notifications/:notificationId/read`
+- mark all notifications as read: `PATCH /api/notifications/read-all`
 
 Example local base URL:
 
