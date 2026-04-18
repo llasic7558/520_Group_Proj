@@ -24,8 +24,8 @@ What is currently implemented:
   - `GET /api/applications/:applicationId`
   - `PUT /api/applications/:applicationId`
   - `DELETE /api/applications/:applicationId`
-- PostgreSQL connection setup
-- integration tests for auth, profiles, listings, and applications
+ - PostgreSQL connection setup
+- API tests for auth, profiles, listings, applications, and search
 
 ## Backend flow
 
@@ -43,7 +43,7 @@ Main folders:
 - [src/models](./src/models): backend data models
 - [src/config](./src/config): environment and DB config
 - [database](./database): schema and seed files
-- [tests](./tests): backend integration tests
+- [tests](./tests): backend API tests
 
 ## Local setup
 
@@ -105,6 +105,7 @@ The client should call these endpoints:
 - create listing: `POST /api/listings`
 - update listing: `PUT /api/listings/:listingId`
 - delete listing: `DELETE /api/listings/:listingId`
+- search listings: `GET /api/listings?category=...&query=...&limit=...`
 - create application: `POST /api/applications`
 - get applications: `GET /api/applications`
 - get one application: `GET /api/applications/:applicationId`

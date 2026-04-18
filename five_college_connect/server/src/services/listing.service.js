@@ -6,6 +6,9 @@ import { ListingRepository } from "../repositories/listing.repository.js";
 import { ListingSkillRepository } from "../repositories/listing-skill.repository.js";
 import { SkillRepository } from "../repositories/skill.repository.js";
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export class ListingService {
   constructor() {
     this.listingRepository = new ListingRepository();
@@ -27,7 +30,14 @@ export class ListingService {
   }
 
   async listListings(filters = {}) {
-    const listings = await this.listingRepository.listListings(filters);
+    const normalizedCategory = filters.category?.trim() || "";
+    const normalizedQuery = filters.query?.trim() || "";
+    const listings = await this.listingRepository.listListings({
+      ...filters,
+      category: normalizedCategory.toLowerCase() === "all" ? "" : normalizedCategory,
+      query: normalizedQuery,
+      isListingIdSearch: UUID_PATTERN.test(normalizedQuery)
+    });
 
     return Promise.all(
       listings.map((listing) => this.buildListingDetails(listing))

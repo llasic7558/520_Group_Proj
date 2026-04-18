@@ -4,10 +4,10 @@ import assert from "node:assert/strict";
 import app from "../src/app.js";
 import { query, testDatabaseConnection } from "../src/config/db.js";
 
-const TEST_TITLE = "Integration Test Listing";
-const TEST_TITLE_GET = "Integration Test Listing Get";
-const TEST_TITLE_UPDATE = "Integration Test Listing Update";
-const TEST_TITLE_DELETE = "Integration Test Listing Delete";
+const TEST_TITLE = "API Test Listing";
+const TEST_TITLE_GET = "API Test Listing Get";
+const TEST_TITLE_UPDATE = "API Test Listing Update";
+const TEST_TITLE_DELETE = "API Test Listing Delete";
 const SEEDED_PASSWORD = "DemoPass123!";
 const OWNER_EMAIL = "emily.rodriguez@umass.edu";
 const OTHER_USER_EMAIL = "michael.chen@umass.edu";
@@ -55,7 +55,7 @@ async function signIn(email, password) {
 }
 
 async function deleteTestListings() {
-  await query("DELETE FROM listings WHERE title LIKE $1", ["Integration Test Listing%"]);
+  await query("DELETE FROM listings WHERE title LIKE $1", ["API Test Listing%"]);
 }
 
 async function createTestListing(title = TEST_TITLE, token = ownerToken) {
@@ -64,7 +64,7 @@ async function createTestListing(title = TEST_TITLE, token = ownerToken) {
     token,
     body: {
       title,
-      description: "Created by integration test",
+      description: "Created by API test",
       category: "project",
       contactMethod: "email",
       contactDetails: "test@umass.edu",
@@ -172,7 +172,7 @@ test("PUT /api/listings/:listingId updates listing fields and related rows", asy
     token: ownerToken,
     body: {
       title: `${TEST_TITLE_UPDATE} Edited`,
-      description: "Updated by integration test",
+      description: "Updated by API test",
       category: "job",
       contactMethod: "profile",
       contactDetails: "",

@@ -92,6 +92,8 @@ export class ListingRepository {
 
   async listListings(filters = {}, executor = { query }) {
     const category = filters.category?.trim() || "";
+    const searchQuery = filters.query?.trim() || "";
+    const isListingIdSearch = Boolean(filters.isListingIdSearch) && searchQuery !== "";
     const status = filters.status?.trim() || "";
     const createdByUserId = filters.createdByUserId?.trim() || "";
     const limitValue = Number(filters.limit);
@@ -115,12 +117,17 @@ export class ListingRepository {
           updated_at
         FROM listings
         WHERE ($1 = '' OR category = $1)
-          AND ($2 = '' OR status = $2)
-          AND ($3 = '' OR created_by_user_id = $3::uuid)
+          AND ($2 = '' OR (
+            $3 = TRUE AND listing_id = $2::uuid
+          ) OR (
+            $3 = FALSE AND title ILIKE '%' || $2 || '%'
+          ))
+          AND ($4 = '' OR status = $4)
+          AND ($5 = '' OR created_by_user_id = $5::uuid)
         ORDER BY created_at DESC
-        LIMIT $4
+        LIMIT $6
       `,
-      [category, status, createdByUserId, limit]
+      [category, searchQuery, isListingIdSearch, status, createdByUserId, limit]
     );
 
     return result.rows.map((row) => new Listing(row));

@@ -130,7 +130,7 @@ test("PUT /api/profiles/:userId updates profile fields and relationships", async
     token: testUserToken,
     body: {
       fullName: "Stanley Profile Test",
-      bio: "Updated by integration test",
+      bio: "Updated by API test",
       college: "UMass Amherst",
       major: "Computer Science",
       graduationYear: 2027,
@@ -161,7 +161,7 @@ test("PUT /api/profiles/:userId updates profile fields and relationships", async
 
   assert.equal(response.status, 200);
   assert.equal(response.body.message, "Profile updated successfully");
-  assert.equal(response.body.profile.bio, "Updated by integration test");
+  assert.equal(response.body.profile.bio, "Updated by API test");
   assert.equal(response.body.profile.skills.length, 1);
   assert.equal(response.body.profile.skills[0].name, "Python");
   assert.equal(response.body.profile.courses.length, 1);

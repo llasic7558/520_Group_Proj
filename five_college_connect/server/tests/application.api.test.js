@@ -5,7 +5,7 @@ import app from "../src/app.js";
 import { query, testDatabaseConnection } from "../src/config/db.js";
 
 const TEST_LISTING_ID = "e1000000-0000-0000-0000-000000000001";
-const TEST_MESSAGE = "Integration test application";
+const TEST_MESSAGE = "API test application";
 const SEEDED_PASSWORD = "DemoPass123!";
 const APPLICANT_EMAIL = "emily.rodriguez@umass.edu";
 const LISTING_OWNER_EMAIL = "sarah.johnson@umass.edu";
