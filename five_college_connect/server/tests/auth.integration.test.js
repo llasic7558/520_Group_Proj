@@ -7,6 +7,10 @@ import { query, testDatabaseConnection } from "../src/config/db.js";
 const TEST_EMAIL = "stanley.test.auth@umass.edu";
 const TEST_USERNAME = "stanley_test_auth";
 const TEST_PASSWORD = "StanleyPass123!";
+const DUPLICATE_LOCAL_PART = "shared.name";
+const DUPLICATE_USERNAME = "shared.name";
+const FIRST_DUPLICATE_EMAIL = `${DUPLICATE_LOCAL_PART}@umass.edu`;
+const SECOND_DUPLICATE_EMAIL = `${DUPLICATE_LOCAL_PART}@hampshire.edu`;
 
 let server;
 let baseUrl;
@@ -32,6 +36,10 @@ async function deleteTestUser() {
   await query("DELETE FROM users WHERE email = $1", [TEST_EMAIL]);
 }
 
+async function deleteUserByEmail(email) {
+  await query("DELETE FROM users WHERE email = $1", [email]);
+}
+
 test.before(async () => {
   await testDatabaseConnection();
 
@@ -49,6 +57,8 @@ test.before(async () => {
 
 test.after(async () => {
   await deleteTestUser();
+  await deleteUserByEmail(FIRST_DUPLICATE_EMAIL);
+  await deleteUserByEmail(SECOND_DUPLICATE_EMAIL);
 
   if (server) {
     await new Promise((resolve, reject) => {
@@ -177,3 +187,60 @@ test("POST /api/auth/signup creates a user, profile, skills, and courses", async
   assert.equal(savedCourseLinkResult.rowCount, 1);
 });
 
+test("POST /api/auth/signup allows the same username when emails are different", async () => {
+  await deleteUserByEmail(FIRST_DUPLICATE_EMAIL);
+  await deleteUserByEmail(SECOND_DUPLICATE_EMAIL);
+
+  const firstResponse = await requestJson("/api/auth/signup", {
+    method: "POST",
+    body: {
+      email: FIRST_DUPLICATE_EMAIL,
+      username: DUPLICATE_USERNAME,
+      password: TEST_PASSWORD,
+      role: "student",
+      profile: {
+        fullName: "Shared Name One",
+        bio: "",
+        college: "UMass Amherst",
+        major: "",
+        graduationYear: 2027,
+        interests: "",
+        availability: "",
+        lookingFor: "",
+        profileImageUrl: "",
+        skills: [],
+        courses: []
+      }
+    }
+  });
+
+  const secondResponse = await requestJson("/api/auth/signup", {
+    method: "POST",
+    body: {
+      email: SECOND_DUPLICATE_EMAIL,
+      username: DUPLICATE_USERNAME,
+      password: TEST_PASSWORD,
+      role: "student",
+      profile: {
+        fullName: "Shared Name Two",
+        bio: "",
+        college: "Hampshire College",
+        major: "",
+        graduationYear: 2028,
+        interests: "",
+        availability: "",
+        lookingFor: "",
+        profileImageUrl: "",
+        skills: [],
+        courses: []
+      }
+    }
+  });
+
+  assert.equal(firstResponse.status, 201);
+  assert.equal(secondResponse.status, 201);
+  assert.equal(firstResponse.body.user.username, DUPLICATE_USERNAME);
+  assert.equal(secondResponse.body.user.username, DUPLICATE_USERNAME);
+  assert.equal(firstResponse.body.user.email, FIRST_DUPLICATE_EMAIL);
+  assert.equal(secondResponse.body.user.email, SECOND_DUPLICATE_EMAIL);
+});

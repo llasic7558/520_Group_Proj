@@ -29,11 +29,6 @@ export class AccountService {
       throw createHttpError(409, "An account with that email already exists");
     }
 
-    const existingUserByUsername = await this.userRepository.findByUsername(username);
-    if (existingUserByUsername) {
-      throw createHttpError(409, "That username is already taken");
-    }
-
     const passwordHash = await this.authenticationService.hashPassword(password);
 
     const { user, fullProfile } = await withTransaction(async (client) => {
