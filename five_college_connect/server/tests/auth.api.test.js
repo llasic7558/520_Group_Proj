@@ -125,7 +125,7 @@ test("POST /api/auth/signup creates a user, profile, skills, and courses", async
       role: "student",
       profile: {
         fullName: "Stanley Test User",
-        bio: "Created by integration test",
+        bio: "Created by API test",
         college: "UMass Amherst",
         major: "Computer Science",
         graduationYear: 2027,

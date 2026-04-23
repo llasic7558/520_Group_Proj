@@ -42,6 +42,7 @@ export async function listListings(req, res, next) {
   try {
     const listings = await listingService.listListings({
       category: req.query.category,
+      query: req.query.query,
       status: req.query.status,
       createdByUserId: req.query.createdByUserId,
       limit: req.query.limit

@@ -24,8 +24,12 @@ What is currently implemented:
   - `GET /api/applications/:applicationId`
   - `PUT /api/applications/:applicationId`
   - `DELETE /api/applications/:applicationId`
+- notifications flow
+  - `GET /api/notifications`
+  - `PATCH /api/notifications/:notificationId/read`
+  - `PATCH /api/notifications/read-all`
 - PostgreSQL connection setup
-- integration tests for auth, profiles, listings, and applications
+- API tests for auth, profiles, listings, applications, search, and notifications
 
 ## Backend flow
 
@@ -43,7 +47,7 @@ Main folders:
 - [src/models](./src/models): backend data models
 - [src/config](./src/config): environment and DB config
 - [database](./database): schema and seed files
-- [tests](./tests): backend integration tests
+- [tests](./tests): backend API tests
 
 ## Local setup
 
@@ -105,11 +109,15 @@ The client should call these endpoints:
 - create listing: `POST /api/listings`
 - update listing: `PUT /api/listings/:listingId`
 - delete listing: `DELETE /api/listings/:listingId`
+- search listings: `GET /api/listings?category=...&query=...&limit=...`
 - create application: `POST /api/applications`
 - get applications: `GET /api/applications`
 - get one application: `GET /api/applications/:applicationId`
 - update application: `PUT /api/applications/:applicationId`
 - delete application: `DELETE /api/applications/:applicationId`
+- get notifications: `GET /api/notifications`
+- mark one notification as read: `PATCH /api/notifications/:notificationId/read`
+- mark all notifications as read: `PATCH /api/notifications/read-all`
 
 Example local base URL:
 
