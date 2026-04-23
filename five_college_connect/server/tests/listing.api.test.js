@@ -11,6 +11,9 @@ const TEST_TITLE_DELETE = "API Test Listing Delete";
 const SEEDED_PASSWORD = "DemoPass123!";
 const OWNER_EMAIL = "emily.rodriguez@umass.edu";
 const OTHER_USER_EMAIL = "michael.chen@umass.edu";
+const UNVERIFIED_EMAIL = "listing.unverified@umass.edu";
+const UNVERIFIED_USERNAME = "listing_unverified";
+const UNVERIFIED_PASSWORD = "StanleyPass123!";
 
 let server;
 let baseUrl;
@@ -58,6 +61,24 @@ async function deleteTestListings() {
   await query("DELETE FROM listings WHERE title LIKE $1", ["API Test Listing%"]);
 }
 
+async function deleteUserByEmail(email) {
+  await query("DELETE FROM users WHERE email = $1", [email]);
+}
+
+async function deleteVerificationTokensByEmail(email) {
+  await query(
+    `
+      DELETE FROM email_verification_tokens
+      WHERE user_id IN (
+        SELECT user_id
+        FROM users
+        WHERE email = $1
+      )
+    `,
+    [email]
+  );
+}
+
 async function createTestListing(title = TEST_TITLE, token = ownerToken) {
   return requestJson("/api/listings", {
     method: "POST",
@@ -99,12 +120,16 @@ test.before(async () => {
   baseUrl = `http://127.0.0.1:${address.port}`;
 
   await deleteTestListings();
+  await deleteVerificationTokensByEmail(UNVERIFIED_EMAIL);
+  await deleteUserByEmail(UNVERIFIED_EMAIL);
   ownerToken = await signIn(OWNER_EMAIL, SEEDED_PASSWORD);
   otherUserToken = await signIn(OTHER_USER_EMAIL, SEEDED_PASSWORD);
 });
 
 test.after(async () => {
   await deleteTestListings();
+  await deleteVerificationTokensByEmail(UNVERIFIED_EMAIL);
+  await deleteUserByEmail(UNVERIFIED_EMAIL);
 
   if (server) {
     await new Promise((resolve, reject) => {
@@ -140,6 +165,40 @@ test("POST /api/listings creates a listing with skills and attachments", async (
   assert.equal(response.body.listing.title, TEST_TITLE);
   assert.equal(response.body.listing.skills.length, 1);
   assert.equal(response.body.listing.attachments.length, 1);
+});
+
+test("POST /api/listings rejects users whose email is not verified", async () => {
+  const signUpResponse = await requestJson("/api/auth/signup", {
+    method: "POST",
+    body: {
+      email: UNVERIFIED_EMAIL,
+      username: UNVERIFIED_USERNAME,
+      password: UNVERIFIED_PASSWORD,
+      role: "student",
+      profile: {
+        fullName: "Unverified Listing User",
+        bio: "",
+        college: "UMass Amherst",
+        major: "Computer Science",
+        graduationYear: 2027,
+        interests: "",
+        availability: "",
+        lookingFor: "",
+        profileImageUrl: "",
+        skills: [],
+        courses: []
+      }
+    }
+  });
+
+  assert.equal(signUpResponse.status, 201);
+  assert.equal(signUpResponse.body.user.emailVerified, false);
+
+  const response = await createTestListing("API Test Listing Unverified", signUpResponse.body.authToken);
+
+  assert.equal(response.status, 403);
+  assert.equal(response.body.message, "Email verification required");
+  assert.equal(response.body.details.code, "EMAIL_NOT_VERIFIED");
 });
 
 test("GET /api/listings returns listing items", async () => {

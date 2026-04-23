@@ -6,6 +6,7 @@ import { query, testDatabaseConnection } from "../src/config/db.js";
 
 const TEST_LISTING_ID = "e1000000-0000-0000-0000-000000000001";
 const TEST_MESSAGE = "API test application";
+const TEST_NOTIFICATION_MESSAGE = 'Someone applied to your listing "CS 187 Data Structures Tutor Needed"';
 const SEEDED_PASSWORD = "DemoPass123!";
 const APPLICANT_EMAIL = "emily.rodriguez@umass.edu";
 const LISTING_OWNER_EMAIL = "sarah.johnson@umass.edu";
@@ -70,6 +71,10 @@ async function deleteTestApplications() {
   await query("DELETE FROM applications WHERE message = $1", [`${TEST_MESSAGE} updated`]);
 }
 
+async function deleteTestNotifications() {
+  await query("DELETE FROM notifications WHERE message = $1", [TEST_NOTIFICATION_MESSAGE]);
+}
+
 test.before(async () => {
   await testDatabaseConnection();
 
@@ -83,6 +88,7 @@ test.before(async () => {
   baseUrl = `http://127.0.0.1:${address.port}`;
 
   await deleteTestApplications();
+  await deleteTestNotifications();
   applicantToken = await signIn(APPLICANT_EMAIL, SEEDED_PASSWORD);
   listingOwnerToken = await signIn(LISTING_OWNER_EMAIL, SEEDED_PASSWORD);
   otherUserToken = await signIn(OTHER_USER_EMAIL, SEEDED_PASSWORD);
@@ -90,6 +96,7 @@ test.before(async () => {
 
 test.after(async () => {
   await deleteTestApplications();
+  await deleteTestNotifications();
 
   if (server) {
     await new Promise((resolve, reject) => {
@@ -103,6 +110,11 @@ test.after(async () => {
       });
     });
   }
+});
+
+test.beforeEach(async () => {
+  await deleteTestApplications();
+  await deleteTestNotifications();
 });
 
 test("POST /api/applications requires authentication", async () => {

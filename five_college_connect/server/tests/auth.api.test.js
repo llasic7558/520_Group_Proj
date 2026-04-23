@@ -15,12 +15,18 @@ const SECOND_DUPLICATE_EMAIL = `${DUPLICATE_LOCAL_PART}@hampshire.edu`;
 let server;
 let baseUrl;
 
-async function requestJson(path, { method = "GET", body } = {}) {
+async function requestJson(path, { method = "GET", body, token } = {}) {
+  const headers = {
+    "Content-Type": "application/json"
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${baseUrl}${path}`, {
     method,
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers,
     body: body ? JSON.stringify(body) : undefined
   });
 
@@ -40,6 +46,20 @@ async function deleteUserByEmail(email) {
   await query("DELETE FROM users WHERE email = $1", [email]);
 }
 
+async function deleteVerificationTokensByEmail(email) {
+  await query(
+    `
+      DELETE FROM email_verification_tokens
+      WHERE user_id IN (
+        SELECT user_id
+        FROM users
+        WHERE email = $1
+      )
+    `,
+    [email]
+  );
+}
+
 test.before(async () => {
   await testDatabaseConnection();
 
@@ -53,11 +73,15 @@ test.before(async () => {
   baseUrl = `http://127.0.0.1:${address.port}`;
 
   await deleteTestUser();
+  await deleteVerificationTokensByEmail(TEST_EMAIL);
 });
 
 test.after(async () => {
+  await deleteVerificationTokensByEmail(TEST_EMAIL);
   await deleteTestUser();
+  await deleteVerificationTokensByEmail(FIRST_DUPLICATE_EMAIL);
   await deleteUserByEmail(FIRST_DUPLICATE_EMAIL);
+  await deleteVerificationTokensByEmail(SECOND_DUPLICATE_EMAIL);
   await deleteUserByEmail(SECOND_DUPLICATE_EMAIL);
 
   if (server) {
@@ -158,6 +182,7 @@ test("POST /api/auth/signup creates a user, profile, skills, and courses", async
   assert.equal(response.status, 201);
   assert.equal(response.body.message, "Account created successfully");
   assert.equal(response.body.user.email, TEST_EMAIL);
+  assert.equal(response.body.user.emailVerified, false);
   assert.equal(response.body.profile.fullName, "Stanley Test User");
   assert.equal(response.body.profile.skills.length, 1);
   assert.equal(response.body.profile.skills[0].userId, response.body.user.id);
@@ -165,7 +190,7 @@ test("POST /api/auth/signup creates a user, profile, skills, and courses", async
   assert.equal(response.body.profile.courses[0].userId, response.body.user.id);
 
   const savedUserResult = await query(
-    "SELECT user_id, email FROM users WHERE email = $1",
+    "SELECT user_id, email, email_verified FROM users WHERE email = $1",
     [TEST_EMAIL]
   );
   const savedProfileResult = await query(
@@ -180,11 +205,17 @@ test("POST /api/auth/signup creates a user, profile, skills, and courses", async
     "SELECT user_id, profile_id FROM user_courses WHERE user_id = $1",
     [response.body.user.id]
   );
+  const savedVerificationTokenResult = await query(
+    "SELECT token_id FROM email_verification_tokens WHERE user_id = $1 AND used_at IS NULL",
+    [response.body.user.id]
+  );
 
   assert.equal(savedUserResult.rowCount, 1);
+  assert.equal(savedUserResult.rows[0].email_verified, false);
   assert.equal(savedProfileResult.rowCount, 1);
   assert.equal(savedSkillLinkResult.rowCount, 1);
   assert.equal(savedCourseLinkResult.rowCount, 1);
+  assert.equal(savedVerificationTokenResult.rowCount, 1);
 });
 
 test("POST /api/auth/signup allows the same username when emails are different", async () => {
@@ -243,4 +274,121 @@ test("POST /api/auth/signup allows the same username when emails are different",
   assert.equal(secondResponse.body.user.username, DUPLICATE_USERNAME);
   assert.equal(firstResponse.body.user.email, FIRST_DUPLICATE_EMAIL);
   assert.equal(secondResponse.body.user.email, SECOND_DUPLICATE_EMAIL);
+});
+
+test("GET /api/auth/verify-email marks a user's email as verified", async () => {
+  await deleteVerificationTokensByEmail(TEST_EMAIL);
+  await deleteTestUser();
+
+  const signUpResponse = await requestJson("/api/auth/signup", {
+    method: "POST",
+    body: {
+      email: TEST_EMAIL,
+      username: TEST_USERNAME,
+      password: TEST_PASSWORD,
+      role: "student",
+      profile: {
+        fullName: "Stanley Test User",
+        bio: "",
+        college: "UMass Amherst",
+        major: "Computer Science",
+        graduationYear: 2027,
+        interests: "",
+        availability: "",
+        lookingFor: "",
+        profileImageUrl: "",
+        skills: [],
+        courses: []
+      }
+    }
+  });
+
+  assert.equal(signUpResponse.status, 201);
+
+  const tokenResult = await query(
+    "SELECT token FROM email_verification_tokens WHERE user_id = $1 AND used_at IS NULL",
+    [signUpResponse.body.user.id]
+  );
+
+  assert.equal(tokenResult.rowCount, 1);
+
+  const verifyResponse = await requestJson(
+    `/api/auth/verify-email?token=${encodeURIComponent(tokenResult.rows[0].token)}`
+  );
+
+  assert.equal(verifyResponse.status, 200);
+  assert.equal(verifyResponse.body.message, "Email verified successfully");
+  assert.equal(verifyResponse.body.user.emailVerified, true);
+
+  const savedUserResult = await query(
+    "SELECT email_verified FROM users WHERE user_id = $1",
+    [signUpResponse.body.user.id]
+  );
+
+  assert.equal(savedUserResult.rows[0].email_verified, true);
+
+  const reusedResponse = await requestJson(
+    `/api/auth/verify-email?token=${encodeURIComponent(tokenResult.rows[0].token)}`
+  );
+
+  assert.equal(reusedResponse.status, 400);
+  assert.equal(reusedResponse.body.message, "Verification token has already been used");
+});
+
+test("POST /api/auth/verify-email/resend rotates the active verification token", async () => {
+  await deleteVerificationTokensByEmail(TEST_EMAIL);
+  await deleteTestUser();
+
+  const signUpResponse = await requestJson("/api/auth/signup", {
+    method: "POST",
+    body: {
+      email: TEST_EMAIL,
+      username: TEST_USERNAME,
+      password: TEST_PASSWORD,
+      role: "student",
+      profile: {
+        fullName: "Stanley Test User",
+        bio: "",
+        college: "UMass Amherst",
+        major: "Computer Science",
+        graduationYear: 2027,
+        interests: "",
+        availability: "",
+        lookingFor: "",
+        profileImageUrl: "",
+        skills: [],
+        courses: []
+      }
+    }
+  });
+
+  assert.equal(signUpResponse.status, 201);
+
+  const firstTokenResult = await query(
+    "SELECT token FROM email_verification_tokens WHERE user_id = $1 AND used_at IS NULL",
+    [signUpResponse.body.user.id]
+  );
+
+  assert.equal(firstTokenResult.rowCount, 1);
+
+  const resendResponse = await requestJson("/api/auth/verify-email/resend", {
+    method: "POST",
+    token: signUpResponse.body.authToken
+  });
+
+  assert.equal(resendResponse.status, 200);
+  assert.equal(resendResponse.body.message, "Verification email sent successfully");
+
+  const activeTokenResult = await query(
+    "SELECT token FROM email_verification_tokens WHERE user_id = $1 AND used_at IS NULL",
+    [signUpResponse.body.user.id]
+  );
+  const originalTokenState = await query(
+    "SELECT used_at FROM email_verification_tokens WHERE token = $1",
+    [firstTokenResult.rows[0].token]
+  );
+
+  assert.equal(activeTokenResult.rowCount, 1);
+  assert.notEqual(activeTokenResult.rows[0].token, firstTokenResult.rows[0].token);
+  assert.ok(originalTokenState.rows[0].used_at);
 });
