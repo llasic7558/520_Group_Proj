@@ -109,6 +109,18 @@
   max-width: 820px;
 }
 
+@media (min-width: 981px) {
+  /* push first section below the fold on desktop */
+  .landing-hero + .landing-section {
+    margin-top: 300px;
+  }
+}
+
+/* space sections apart (what you can do -> how it works) */
+.landing-section + .landing-section {
+  margin-top: 75px;
+}
+
 .landing-section__title {
   margin: 0 0 14px;
   font-size: 1.1rem;
