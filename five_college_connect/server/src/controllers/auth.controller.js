@@ -73,3 +73,35 @@ export async function signIn(req, res, next) {
     next(error);
   }
 }
+
+export async function verifyEmail(req, res, next) {
+  try {
+    const result = await accountService.verifyEmailToken(req.query.token);
+
+    res.status(200).json({
+      message: "Email verified successfully",
+      user: {
+        id: result.user.userId,
+        email: result.user.email,
+        username: result.user.username,
+        role: result.user.role,
+        emailVerified: result.user.emailVerified
+      },
+      profile: result.profile
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function resendVerificationEmail(req, res, next) {
+  try {
+    await accountService.resendVerificationEmail(req.user.userId);
+
+    res.status(200).json({
+      message: "Verification email sent successfully"
+    });
+  } catch (error) {
+    next(error);
+  }
+}
