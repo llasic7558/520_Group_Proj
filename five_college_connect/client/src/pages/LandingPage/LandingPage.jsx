@@ -46,6 +46,7 @@ export default function LandingPage() {
           </div>
         </header>
 
+        {/*
         <section className="landing-section" aria-labelledby="landing-features-title">
           <h2 className="landing-section__title" id="landing-features-title">
             What you can do
@@ -104,10 +105,10 @@ export default function LandingPage() {
             </li>
           </ol>
         </section>
+        */}
 
         <footer className="simple-page__footer">
-          Built for the Five Colleges community. For now, sign in to explore opportunities and create
-          postings.
+          Built for the Five Colleges community. Sign in to explore opportunities and create postings.
         </footer>
       </main>
     </div>
