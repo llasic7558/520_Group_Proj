@@ -83,23 +83,6 @@ export default function LandingPage() {
           </ol>
         </section>
 
-        <section className="landing-section landing-section--cta" aria-labelledby="landing-cta-title">
-          <h2 className="landing-section__title" id="landing-cta-title">
-            Ready to jump in?
-          </h2>
-          <p className="landing-cta__body">
-            Start with a quick profile, then browse opportunities or create a posting when you’re ready.
-          </p>
-          <div className="simple-page__actions">
-            <Link className="simple-btn simple-btn--primary" to="/signup">
-              Create an account
-            </Link>
-            <Link className="simple-btn simple-btn--outline" to="/login">
-              I already have one
-            </Link>
-          </div>
-        </section>
-
         <footer className="simple-page__footer">
           Built for the Five Colleges community. For now, sign in to explore opportunities and create
           postings.
