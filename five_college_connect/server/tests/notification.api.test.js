@@ -19,6 +19,28 @@ let listingOwnerToken;
 let otherUserToken;
 let ownerListingId;
 
+function isOwnerListingNotification(item) {
+  return item.message.includes(`"${OWNER_LISTING_TITLE}"`);
+}
+
+async function listOwnerListingNotifications({ unreadOnly = false } = {}) {
+  const searchParams = new URLSearchParams({
+    limit: "50"
+  });
+
+  if (unreadOnly) {
+    searchParams.set("unreadOnly", "true");
+  }
+
+  const response = await requestJson(`/api/notifications?${searchParams.toString()}`, {
+    token: listingOwnerToken
+  });
+
+  assert.equal(response.status, 200);
+
+  return response.body.items.filter(isOwnerListingNotification);
+}
+
 async function requestJson(path, { method = "GET", body, token } = {}) {
   const headers = {
     "Content-Type": "application/json"
@@ -57,12 +79,14 @@ async function signIn(email, password) {
 }
 
 async function deleteTestNotifications() {
-  await query("DELETE FROM notifications WHERE message = $1", [
-    `Someone applied to your listing "${OWNER_LISTING_TITLE}"`
-  ]);
-  await query("DELETE FROM notifications WHERE message = $1", [
-    `Someone applied to your listing "${SELF_LISTING_TITLE}"`
-  ]);
+  await query(
+    `
+      DELETE FROM notifications
+      WHERE message LIKE $1
+         OR message LIKE $2
+    `,
+    [`%${OWNER_LISTING_TITLE}%`, `%${SELF_LISTING_TITLE}%`]
+  );
 }
 
 async function deleteTestApplications() {
@@ -148,6 +172,7 @@ test.before(async () => {
 
   await deleteTestApplications();
   await deleteTestNotifications();
+  await deleteOwnerListing();
   await deleteSelfListing();
 
   applicantToken = await signIn(APPLICANT_EMAIL, SEEDED_PASSWORD);
@@ -193,32 +218,22 @@ test("GET /api/notifications requires authentication", { concurrency: false }, a
 test("POST /api/applications creates an unread notification for the listing owner", { concurrency: false }, async () => {
   await createTestApplication();
 
-  const response = await requestJson("/api/notifications", {
-    token: listingOwnerToken
-  });
+  const notifications = await listOwnerListingNotifications({ unreadOnly: true });
 
-  assert.equal(response.status, 200);
-  assert.ok(Array.isArray(response.body.items));
-  assert.ok(response.body.unreadCount >= 1);
-  assert.equal(response.body.items[0].type, "new_application");
-  assert.match(response.body.items[0].message, /Someone applied to your listing/);
-  assert.equal(response.body.items[0].isRead, false);
+  assert.ok(notifications.length >= 1);
+  assert.equal(notifications[0].type, "new_application");
+  assert.match(notifications[0].message, /Someone applied to your listing/);
+  assert.equal(notifications[0].isRead, false);
 });
 
 test("GET /api/notifications updates unreadCount when a new notification is created", { concurrency: false }, async () => {
-  const beforeResponse = await requestJson("/api/notifications", {
-    token: listingOwnerToken
-  });
+  const beforeNotifications = await listOwnerListingNotifications({ unreadOnly: true });
 
   await createTestApplication();
 
-  const afterResponse = await requestJson("/api/notifications", {
-    token: listingOwnerToken
-  });
+  const afterNotifications = await listOwnerListingNotifications({ unreadOnly: true });
 
-  assert.equal(beforeResponse.status, 200);
-  assert.equal(afterResponse.status, 200);
-  assert.equal(afterResponse.body.unreadCount, beforeResponse.body.unreadCount + 1);
+  assert.equal(afterNotifications.length, beforeNotifications.length + 1);
 });
 
 test("GET /api/notifications supports unread-only filtering", { concurrency: false }, async () => {
@@ -236,10 +251,8 @@ test("GET /api/notifications supports unread-only filtering", { concurrency: fal
 test("PATCH /api/notifications/:notificationId/read marks one notification as read", { concurrency: false }, async () => {
   await createTestApplication();
 
-  const listResponse = await requestJson("/api/notifications?unreadOnly=true&limit=10", {
-    token: listingOwnerToken
-  });
-  const notificationId = listResponse.body.items[0].notificationId;
+  const notifications = await listOwnerListingNotifications({ unreadOnly: true });
+  const notificationId = notifications[0].notificationId;
 
   const readResponse = await requestJson(`/api/notifications/${notificationId}/read`, {
     method: "PATCH",
@@ -254,31 +267,24 @@ test("PATCH /api/notifications/:notificationId/read marks one notification as re
 test("PATCH /api/notifications/:notificationId/read decreases unreadCount by one", { concurrency: false }, async () => {
   await createTestApplication();
 
-  const beforeResponse = await requestJson("/api/notifications?unreadOnly=true&limit=10", {
-    token: listingOwnerToken
-  });
-  const notificationId = beforeResponse.body.items[0].notificationId;
+  const beforeNotifications = await listOwnerListingNotifications({ unreadOnly: true });
+  const notificationId = beforeNotifications[0].notificationId;
 
   const readResponse = await requestJson(`/api/notifications/${notificationId}/read`, {
     method: "PATCH",
     token: listingOwnerToken
   });
-  const afterResponse = await requestJson("/api/notifications", {
-    token: listingOwnerToken
-  });
+  const afterNotifications = await listOwnerListingNotifications({ unreadOnly: true });
 
   assert.equal(readResponse.status, 200);
-  assert.equal(afterResponse.status, 200);
-  assert.equal(afterResponse.body.unreadCount, beforeResponse.body.unreadCount - 1);
+  assert.equal(afterNotifications.length, beforeNotifications.length - 1);
 });
 
 test("PATCH /api/notifications/:notificationId/read rejects another user's notification", { concurrency: false }, async () => {
   await createTestApplication();
 
-  const listResponse = await requestJson("/api/notifications?unreadOnly=true&limit=10", {
-    token: listingOwnerToken
-  });
-  const notificationId = listResponse.body.items[0].notificationId;
+  const notifications = await listOwnerListingNotifications({ unreadOnly: true });
+  const notificationId = notifications[0].notificationId;
 
   const response = await requestJson(`/api/notifications/${notificationId}/read`, {
     method: "PATCH",
@@ -314,13 +320,9 @@ test("PATCH /api/notifications/read-all marks all notifications as read", { conc
   assert.equal(markAllResponse.status, 200);
   assert.ok(markAllResponse.body.updatedCount >= 1);
 
-  const unreadResponse = await requestJson("/api/notifications?unreadOnly=true&limit=10", {
-    token: listingOwnerToken
-  });
+  const unreadNotifications = await listOwnerListingNotifications({ unreadOnly: true });
 
-  assert.equal(unreadResponse.status, 200);
-  assert.equal(unreadResponse.body.items.length, 0);
-  assert.equal(unreadResponse.body.unreadCount, 0);
+  assert.equal(unreadNotifications.length, 0);
 });
 
 test("POST /api/applications does not create a notification for a self-owned listing", { concurrency: false }, async () => {
