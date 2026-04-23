@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import './LandingPage.css'
+import umassHero from './umass.jpg'
 
 // super basic entry page before you log in
 export default function LandingPage() {
@@ -7,20 +8,41 @@ export default function LandingPage() {
     <div className="simple-page">
       <main className="simple-page__main simple-page__main--center landing-main">
         <header className="landing-hero">
-          <p className="landing-kicker">five college connect</p>
-          <h1 className="simple-page__title">Meet people. Find help. Build stuff.</h1>
-          <p className="simple-page__lede">
-            A shared space for Amherst, Hampshire, Mount Holyoke, Smith, and UMass students to
-            connect around tutoring, projects, jobs, and study groups.
-          </p>
+          <div className="landing-hero__grid">
+            <div className="landing-hero__copy">
+              <p className="landing-kicker">Five College Connect</p>
+              <h1 className="landing-hero__title">
+                Opportunities.
+                <br />
+                Connections.
+                <br />
+                <span className="landing-hero__accent">Across Five Colleges.</span>
+              </h1>
+              <p className="landing-hero__lede">
+                Find tutoring, projects, jobs, and study groups with students across Amherst, Hampshire,
+                Mount Holyoke, Smith, and UMass.
+              </p>
 
-          <div className="simple-page__actions">
-            <Link className="simple-btn simple-btn--primary" to="/login">
-              Log in
-            </Link>
-            <Link className="simple-btn simple-btn--outline" to="/signup">
-              Sign up
-            </Link>
+              <div className="simple-page__actions landing-hero__actions">
+                <Link className="simple-btn simple-btn--primary" to="/login">
+                  Log in
+                </Link>
+                <Link className="simple-btn simple-btn--outline" to="/signup">
+                  Sign up
+                </Link>
+              </div>
+
+              <div className="landing-pills" aria-label="Popular categories">
+                <span className="landing-pill">Tutoring</span>
+                <span className="landing-pill">Projects</span>
+                <span className="landing-pill">Jobs</span>
+                <span className="landing-pill">Study groups</span>
+              </div>
+            </div>
+
+            <div className="landing-hero__visual" aria-hidden="true">
+              <img className="landing-hero__image" src={umassHero} alt="" />
+            </div>
           </div>
         </header>
 
