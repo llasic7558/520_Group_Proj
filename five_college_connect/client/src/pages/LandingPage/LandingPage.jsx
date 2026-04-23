@@ -26,23 +26,23 @@ export default function LandingPage() {
 
         <section className="landing-section" aria-labelledby="landing-features-title">
           <h2 className="landing-section__title" id="landing-features-title">
-            what you can do
+            What you can do
           </h2>
           <div className="landing-grid">
             <article className="landing-card">
-              <h3 className="landing-card__title">browse opportunities</h3>
+              <h3 className="landing-card__title">Browse opportunities</h3>
               <p className="landing-card__body">
                 Find tutoring, research, part-time work, clubs, and group projects — all in one feed.
               </p>
             </article>
             <article className="landing-card">
-              <h3 className="landing-card__title">post what you need</h3>
+              <h3 className="landing-card__title">Post what you need</h3>
               <p className="landing-card__body">
                 Create a listing for your role, your study group, or the help you’re looking for.
               </p>
             </article>
             <article className="landing-card">
-              <h3 className="landing-card__title">show your profile</h3>
+              <h3 className="landing-card__title">Show your profile</h3>
               <p className="landing-card__body">
                 Keep a simple profile with your college, skills, courses, and what you’re into.
               </p>
@@ -52,20 +52,20 @@ export default function LandingPage() {
 
         <section className="landing-section" aria-labelledby="landing-how-title">
           <h2 className="landing-section__title" id="landing-how-title">
-            how it works
+            How it works
           </h2>
           <ol className="landing-steps">
             <li className="landing-step">
               <span className="landing-step__num">1</span>
               <div className="landing-step__content">
-                <p className="landing-step__title">create an account</p>
+                <p className="landing-step__title">Create an account</p>
                 <p className="landing-step__body">Sign up, then log in to unlock the app.</p>
               </div>
             </li>
             <li className="landing-step">
               <span className="landing-step__num">2</span>
               <div className="landing-step__content">
-                <p className="landing-step__title">explore and save time</p>
+                <p className="landing-step__title">Explore and save time</p>
                 <p className="landing-step__body">
                   Browse the opportunities feed and open a listing to see details.
                 </p>
@@ -74,9 +74,9 @@ export default function LandingPage() {
             <li className="landing-step">
               <span className="landing-step__num">3</span>
               <div className="landing-step__content">
-                <p className="landing-step__title">post your own listing</p>
+                <p className="landing-step__title">Post your own listing</p>
                 <p className="landing-step__body">
-                  Need a tutor? recruiting for a project? create a posting and share it.
+                  Need a tutor? Recruiting for a project? Create a posting and share it.
                 </p>
               </div>
             </li>
@@ -85,7 +85,7 @@ export default function LandingPage() {
 
         <section className="landing-section landing-section--cta" aria-labelledby="landing-cta-title">
           <h2 className="landing-section__title" id="landing-cta-title">
-            ready to jump in?
+            Ready to jump in?
           </h2>
           <p className="landing-cta__body">
             Start with a quick profile, then browse opportunities or create a posting when you’re ready.
