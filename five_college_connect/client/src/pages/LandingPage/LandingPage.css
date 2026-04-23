@@ -1,1 +1,128 @@
 @import '../shared/simplePages.css';
+
+.landing-main {
+  max-width: 920px;
+}
+
+.landing-hero {
+  margin-top: 6vh;
+}
+
+.landing-kicker {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fcc-muted);
+}
+
+.landing-section {
+  margin: 36px auto 0;
+  text-align: left;
+  max-width: 820px;
+}
+
+.landing-section__title {
+  margin: 0 0 14px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fcc-text);
+  text-transform: lowercase;
+}
+
+.landing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.landing-card {
+  border: 1px solid var(--fcc-border);
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px 14px 16px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+}
+
+.landing-card__title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--fcc-text);
+  text-transform: lowercase;
+}
+
+.landing-card__body {
+  margin: 0;
+  color: var(--fcc-muted);
+  line-height: 1.5;
+}
+
+.landing-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.landing-step {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 12px 14px;
+  border: 1px solid var(--fcc-border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.landing-step__num {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(128, 48, 48, 0.08);
+  color: var(--fcc-maroon);
+  font-weight: 800;
+}
+
+.landing-step__title {
+  margin: 0 0 4px;
+  font-weight: 800;
+  color: var(--fcc-text);
+  text-transform: lowercase;
+}
+
+.landing-step__body {
+  margin: 0;
+  color: var(--fcc-muted);
+  line-height: 1.5;
+}
+
+.landing-section--cta {
+  text-align: center;
+  padding: 18px 16px 16px;
+  border: 1px solid var(--fcc-border);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(128, 48, 48, 0.08), rgba(255, 255, 255, 1));
+}
+
+.landing-cta__body {
+  margin: 0 0 16px;
+  color: var(--fcc-muted);
+  line-height: 1.5;
+}
+
+@media (max-width: 820px) {
+  .landing-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-section {
+    max-width: 520px;
+  }
+}
