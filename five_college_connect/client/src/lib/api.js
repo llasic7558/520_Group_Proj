@@ -64,3 +64,45 @@ export async function apiRequest(path, { method = 'GET', body } = {}) {
 
   return payload
 }
+
+function buildQueryString(params) {
+  const query = new URLSearchParams()
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null) return
+    const normalized = typeof value === 'string' ? value.trim() : value
+    if (normalized === '') return
+    query.set(key, String(normalized))
+  })
+
+  const serialized = query.toString()
+  return serialized ? `?${serialized}` : ''
+}
+
+export async function fetchListings(filters = {}) {
+  const payload = await apiRequest(
+    `/api/listings${buildQueryString(filters)}`,
+  )
+  return payload?.items ?? []
+}
+
+export async function createListing(body) {
+  const payload = await apiRequest('/api/listings', {
+    method: 'POST',
+    body,
+  })
+  return payload?.listing ?? null
+}
+
+export async function fetchProfile(userId) {
+  const payload = await apiRequest(`/api/profiles/${userId}`)
+  return payload?.profile ?? null
+}
+
+export async function updateProfile(userId, body) {
+  const payload = await apiRequest(`/api/profiles/${userId}`, {
+    method: 'PUT',
+    body,
+  })
+  return payload?.profile ?? null
+}

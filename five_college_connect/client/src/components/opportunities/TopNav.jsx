@@ -7,7 +7,18 @@ import {
 } from './Icons.jsx'
 
 // top bar shared on feed + profile (search text changes per page)
-export function TopNav({ searchPlaceholder = 'Search opportunities...' }) {
+export function TopNav({
+  searchPlaceholder = 'Search opportunities...',
+  searchValue,
+  onSearchChange,
+}) {
+  const searchInputProps = onSearchChange
+    ? {
+        value: searchValue ?? '',
+        onChange: onSearchChange,
+      }
+    : {}
+
   return (
     <header className="fcc-topnav">
       <div className="fcc-topnav__left">
@@ -29,6 +40,7 @@ export function TopNav({ searchPlaceholder = 'Search opportunities...' }) {
             className="fcc-search__input"
             placeholder={searchPlaceholder}
             autoComplete="off"
+            {...searchInputProps}
           />
         </label>
       </div>
