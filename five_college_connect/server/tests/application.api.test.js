@@ -11,6 +11,9 @@ const SEEDED_PASSWORD = "DemoPass123!";
 const APPLICANT_EMAIL = "emily.rodriguez@umass.edu";
 const LISTING_OWNER_EMAIL = "sarah.johnson@umass.edu";
 const OTHER_USER_EMAIL = "michael.chen@umass.edu";
+const UNVERIFIED_EMAIL = "application.unverified@umass.edu";
+const UNVERIFIED_USERNAME = "application_unverified";
+const UNVERIFIED_PASSWORD = "StanleyPass123!";
 
 let server;
 let baseUrl;
@@ -75,6 +78,24 @@ async function deleteTestNotifications() {
   await query("DELETE FROM notifications WHERE message = $1", [TEST_NOTIFICATION_MESSAGE]);
 }
 
+async function deleteUserByEmail(email) {
+  await query("DELETE FROM users WHERE email = $1", [email]);
+}
+
+async function deleteVerificationTokensByEmail(email) {
+  await query(
+    `
+      DELETE FROM email_verification_tokens
+      WHERE user_id IN (
+        SELECT user_id
+        FROM users
+        WHERE email = $1
+      )
+    `,
+    [email]
+  );
+}
+
 test.before(async () => {
   await testDatabaseConnection();
 
@@ -89,6 +110,8 @@ test.before(async () => {
 
   await deleteTestApplications();
   await deleteTestNotifications();
+  await deleteVerificationTokensByEmail(UNVERIFIED_EMAIL);
+  await deleteUserByEmail(UNVERIFIED_EMAIL);
   applicantToken = await signIn(APPLICANT_EMAIL, SEEDED_PASSWORD);
   listingOwnerToken = await signIn(LISTING_OWNER_EMAIL, SEEDED_PASSWORD);
   otherUserToken = await signIn(OTHER_USER_EMAIL, SEEDED_PASSWORD);
@@ -97,6 +120,8 @@ test.before(async () => {
 test.after(async () => {
   await deleteTestApplications();
   await deleteTestNotifications();
+  await deleteVerificationTokensByEmail(UNVERIFIED_EMAIL);
+  await deleteUserByEmail(UNVERIFIED_EMAIL);
 
   if (server) {
     await new Promise((resolve, reject) => {
@@ -135,6 +160,40 @@ test("POST /api/applications creates an application", async () => {
   assert.equal(response.status, 201);
   assert.equal(response.body.message, "Application created successfully");
   assert.equal(response.body.application.listingId, TEST_LISTING_ID);
+});
+
+test("POST /api/applications rejects users whose email is not verified", async () => {
+  const signUpResponse = await requestJson("/api/auth/signup", {
+    method: "POST",
+    body: {
+      email: UNVERIFIED_EMAIL,
+      username: UNVERIFIED_USERNAME,
+      password: UNVERIFIED_PASSWORD,
+      role: "student",
+      profile: {
+        fullName: "Unverified Application User",
+        bio: "",
+        college: "UMass Amherst",
+        major: "Computer Science",
+        graduationYear: 2027,
+        interests: "",
+        availability: "",
+        lookingFor: "",
+        profileImageUrl: "",
+        skills: [],
+        courses: []
+      }
+    }
+  });
+
+  assert.equal(signUpResponse.status, 201);
+  assert.equal(signUpResponse.body.user.emailVerified, false);
+
+  const response = await createTestApplication(signUpResponse.body.authToken);
+
+  assert.equal(response.status, 403);
+  assert.equal(response.body.message, "Email verification required");
+  assert.equal(response.body.details.code, "EMAIL_NOT_VERIFIED");
 });
 
 test("GET /api/applications returns application items", async () => {
