@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.js'
-import { fetchProfile, updateProfile } from '../../lib/api.js'
+import { fetchListings, fetchProfile, updateProfile } from '../../lib/api.js'
 import { TopNav } from '../../components/opportunities/TopNav.jsx'
 import {
   IconGithub,
@@ -11,7 +11,7 @@ import {
   IconUserDoc,
   IconVerified,
 } from '../../components/opportunities/Icons.jsx'
-import { mockProjects, mockRecentActivity } from '../../data/mockProfile.js'
+import { mockRecentActivity } from '../../data/mockProfile.js'
 import '../OpportunitiesPage/OpportunitiesPage.css'
 import './ProfilePage.css'
 
@@ -162,9 +162,26 @@ function skillIconClass(name) {
   return 'prof-skill-card__icon'
 }
 
+function normalizeProjectListings(items) {
+  if (!Array.isArray(items)) return []
+
+  return items.map((listing) => ({
+    project_id: listing.listingId,
+    title: listing.title || 'Untitled project',
+    description: listing.description || 'No description provided.',
+    tags: Array.isArray(listing.skills)
+      ? listing.skills
+          .map((skill) => skill.name)
+          .filter(Boolean)
+          .slice(0, 4)
+      : [],
+  }))
+}
+
 export default function ProfilePage() {
   const { user } = useAuth()
   const [profile, setProfile] = useState(null)
+  const [projectListings, setProjectListings] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -187,13 +204,37 @@ export default function ProfilePage() {
       setErrorMessage('')
 
       try {
-        const result = await fetchProfile(user.id)
+        const [profileResult, projectResult] = await Promise.allSettled([
+          fetchProfile(user.id),
+          fetchListings({
+            createdByUserId: user.id,
+            category: 'project',
+            limit: 6,
+          }),
+        ])
+
         if (ignore) return
-        setProfile(normalizeProfile(result))
-      } catch (err) {
-        if (ignore) return
-        setProfile({ ...EMPTY_PROFILE, user_id: user.id })
-        setErrorMessage(err?.message || 'Could not load your profile.')
+
+        if (profileResult.status === 'fulfilled') {
+          setProfile(normalizeProfile(profileResult.value))
+        } else {
+          setProfile({ ...EMPTY_PROFILE, user_id: user.id })
+          setErrorMessage(
+            profileResult.reason?.message || 'Could not load your profile.',
+          )
+        }
+
+        if (projectResult.status === 'fulfilled') {
+          setProjectListings(normalizeProjectListings(projectResult.value))
+        } else {
+          setProjectListings([])
+          if (profileResult.status === 'fulfilled') {
+            setErrorMessage(
+              projectResult.reason?.message ||
+                'Could not load your project listings.',
+            )
+          }
+        }
       } finally {
         if (!ignore) {
           setIsLoading(false)
@@ -463,7 +504,7 @@ export default function ProfilePage() {
             </div>
             <div className="prof-stats__sep" />
             <div className="prof-stats__item">
-              <strong>{mockProjects.length}</strong>
+              <strong>{isLoading ? '—' : projectListings.length}</strong>
               <span>Projects</span>
             </div>
             <div className="prof-stats__sep" />
@@ -748,33 +789,50 @@ export default function ProfilePage() {
           <section className="prof-section">
             <div className="prof-section__head">
               <h2 className="prof-section__title">Featured Projects</h2>
-              <button
-                type="button"
-                className="prof-link-btn"
-                disabled={isEditing}
-              >
-                + Add Project
-              </button>
+              {isEditing ? (
+                <button
+                  type="button"
+                  className="prof-link-btn"
+                  disabled
+                >
+                  + Add Project
+                </button>
+              ) : (
+                <Link className="prof-text-link" to="/postings/new">
+                  Create Project
+                </Link>
+              )}
             </div>
             <div className="prof-projects">
-              {mockProjects.map((project) => (
-                <article key={project.project_id} className="prof-project-card">
-                  <div className="prof-project-card__thumb" aria-hidden />
-                  <div className="prof-project-card__body">
-                    <h3 className="prof-project-card__title">{project.title}</h3>
-                    <p className="prof-project-card__desc">
-                      {project.description}
-                    </p>
-                    <div className="prof-project-card__tags">
-                      {project.tags.map((tag) => (
-                        <span key={tag} className="prof-tag">
-                          {tag}
-                        </span>
-                      ))}
+              {isLoading ? (
+                <p className="prof-section__body">Loading projects...</p>
+              ) : projectListings.length === 0 ? (
+                <p className="prof-section__body">
+                  No project listings yet. Create a posting in the project
+                  category to show work here.
+                </p>
+              ) : (
+                projectListings.map((project) => (
+                  <article key={project.project_id} className="prof-project-card">
+                    <div className="prof-project-card__thumb" aria-hidden />
+                    <div className="prof-project-card__body">
+                      <h3 className="prof-project-card__title">{project.title}</h3>
+                      <p className="prof-project-card__desc">
+                        {project.description}
+                      </p>
+                      {project.tags.length > 0 ? (
+                        <div className="prof-project-card__tags">
+                          {project.tags.map((tag) => (
+                            <span key={tag} className="prof-tag">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                ))
+              )}
             </div>
           </section>
         </div>
