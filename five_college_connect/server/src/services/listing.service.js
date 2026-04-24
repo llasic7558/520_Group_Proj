@@ -4,7 +4,9 @@ import { ensureOwnerOrAdmin } from "../utils/authorization.js";
 import { ListingAttachmentRepository } from "../repositories/listing-attachment.repository.js";
 import { ListingRepository } from "../repositories/listing.repository.js";
 import { ListingSkillRepository } from "../repositories/listing-skill.repository.js";
+import { ProfileRepository } from "../repositories/profile.repository.js";
 import { SkillRepository } from "../repositories/skill.repository.js";
+import { UserRepository } from "../repositories/user.repository.js";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -15,6 +17,8 @@ export class ListingService {
     this.listingSkillRepository = new ListingSkillRepository();
     this.listingAttachmentRepository = new ListingAttachmentRepository();
     this.skillRepository = new SkillRepository();
+    this.userRepository = new UserRepository();
+    this.profileRepository = new ProfileRepository();
   }
 
   async createListing(payload, currentUser) {
@@ -133,15 +137,23 @@ export class ListingService {
       }
     }
 
-    const [skills, attachments] = await Promise.all([
+    const [skills, attachments, creator, creatorProfile] = await Promise.all([
       this.listingSkillRepository.findByListingId(listing.listingId, executor),
-      this.listingAttachmentRepository.findByListingId(listing.listingId, executor)
+      this.listingAttachmentRepository.findByListingId(listing.listingId, executor),
+      this.userRepository.findById(listing.createdByUserId, executor),
+      this.profileRepository.findByUserId(listing.createdByUserId, executor)
     ]);
 
     return {
       ...listing,
       skills,
-      attachments
+      attachments,
+      creator: creator
+        ? {
+            ...creator,
+            profile: creatorProfile
+          }
+        : null
     };
   }
 }

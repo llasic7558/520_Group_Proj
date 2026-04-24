@@ -550,8 +550,89 @@
   margin-bottom: 8px;
 }
 
+.prof-editor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.prof-editor-card {
+  border: 1px solid var(--fcc-border);
+  background: var(--fcc-bg);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.prof-editor-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.prof-editor-grid--skills {
+  grid-template-columns: 1.3fr 1fr 180px;
+}
+
+.prof-editor-grid--courses {
+  grid-template-columns: 1fr 1.3fr 1fr 180px 120px;
+}
+
+.prof-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.prof-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--fcc-text);
+}
+
+.prof-check input {
+  margin: 0;
+}
+
+.prof-remove-btn {
+  font-family: var(--fcc-font);
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid #e4b5b5;
+  background: #fff5f5;
+  color: #9f1239;
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.prof-remove-btn:hover {
+  background: #ffe4e6;
+}
+
 @media (max-width: 560px) {
   .prof-edit-fields {
     grid-template-columns: 1fr;
   }
+
+  .prof-editor-grid--skills,
+  .prof-editor-grid--courses {
+    grid-template-columns: 1fr;
+  }
+}
+
+.prof-field select {
+  font-family: var(--fcc-font);
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--fcc-text);
+  padding: 10px 12px;
+  border: 1px solid var(--fcc-border);
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  background: #fff;
 }
