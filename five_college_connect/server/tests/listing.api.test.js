@@ -148,6 +148,8 @@ test("GET /api/listings returns listing items", async () => {
   assert.equal(response.status, 200);
   assert.ok(Array.isArray(response.body.items));
   assert.ok(response.body.items.length >= 1);
+  assert.ok(response.body.items[0].creator);
+  assert.ok(response.body.items[0].creator.profile);
 });
 
 test("GET /api/listings/:listingId returns one listing", async () => {
@@ -161,6 +163,8 @@ test("GET /api/listings/:listingId returns one listing", async () => {
   assert.equal(response.body.listing.title, TEST_TITLE_GET);
   assert.equal(response.body.listing.skills.length, 1);
   assert.equal(response.body.listing.attachments.length, 1);
+  assert.ok(response.body.listing.creator);
+  assert.ok(response.body.listing.creator.profile);
 });
 
 test("PUT /api/listings/:listingId updates listing fields and related rows", async () => {
