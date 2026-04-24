@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.js'
-import { fetchListings, fetchProfile, updateProfile } from '../../lib/api.js'
+import {
+  fetchApplications,
+  fetchListing,
+  fetchListings,
+  fetchProfile,
+  updateProfile,
+} from '../../lib/api.js'
 import { TopNav } from '../../components/opportunities/TopNav.jsx'
 import {
   IconGithub,
@@ -11,7 +17,6 @@ import {
   IconUserDoc,
   IconVerified,
 } from '../../components/opportunities/Icons.jsx'
-import { mockRecentActivity } from '../../data/mockProfile.js'
 import '../OpportunitiesPage/OpportunitiesPage.css'
 import './ProfilePage.css'
 
@@ -178,10 +183,67 @@ function normalizeProjectListings(items) {
   }))
 }
 
+function formatRelativeTime(iso) {
+  if (!iso) return 'Recently'
+
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return 'Recently'
+
+  const diffMs = Date.now() - date.getTime()
+  const diffMinutes = Math.max(1, Math.round(diffMs / 60000))
+
+  if (diffMinutes < 60) return `${diffMinutes}m ago`
+
+  const diffHours = Math.round(diffMinutes / 60)
+  if (diffHours < 24) return `${diffHours}h ago`
+
+  const diffDays = Math.round(diffHours / 24)
+  if (diffDays < 7) return `${diffDays}d ago`
+
+  return date.toLocaleDateString()
+}
+
+function buildRecentActivity({ listings, applications, listingTitles }) {
+  const listingActivity = (listings ?? []).map((listing) => {
+    const category = String(listing.category || 'opportunity').toLowerCase()
+    const label =
+      category === 'study_group'
+        ? 'study group'
+        : category || 'opportunity'
+
+    return {
+      id: `listing-${listing.listingId}`,
+      message: `Created a ${label} posting: ${listing.title}`,
+      occurredAt: listing.createdAt,
+      occurred_at_label: formatRelativeTime(listing.createdAt),
+    }
+  })
+
+  const applicationActivity = (applications ?? []).map((application) => {
+    const listingTitle =
+      listingTitles.get(application.listingId) || 'a listing'
+
+    return {
+      id: `application-${application.applicationId}`,
+      message: `Applied to ${listingTitle}`,
+      occurredAt: application.submittedAt,
+      occurred_at_label: formatRelativeTime(application.submittedAt),
+    }
+  })
+
+  return [...listingActivity, ...applicationActivity]
+    .filter((item) => item.occurredAt)
+    .sort((left, right) => {
+      return new Date(right.occurredAt) - new Date(left.occurredAt)
+    })
+    .slice(0, 6)
+}
+
 export default function ProfilePage() {
   const { user } = useAuth()
   const [profile, setProfile] = useState(null)
   const [projectListings, setProjectListings] = useState([])
+  const [recentActivity, setRecentActivity] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -204,12 +266,15 @@ export default function ProfilePage() {
       setErrorMessage('')
 
       try {
-        const [profileResult, projectResult] = await Promise.allSettled([
+        const [profileResult, listingsResult, applicationsResult] =
+          await Promise.allSettled([
           fetchProfile(user.id),
           fetchListings({
             createdByUserId: user.id,
-            category: 'project',
-            limit: 6,
+            limit: 10,
+          }),
+          fetchApplications({
+            limit: 10,
           }),
         ])
 
@@ -224,16 +289,74 @@ export default function ProfilePage() {
           )
         }
 
-        if (projectResult.status === 'fulfilled') {
-          setProjectListings(normalizeProjectListings(projectResult.value))
-        } else {
+        const ownedListings =
+          listingsResult.status === 'fulfilled' ? listingsResult.value : []
+        const ownApplications =
+          applicationsResult.status === 'fulfilled'
+            ? applicationsResult.value
+            : []
+
+        setProjectListings(
+          normalizeProjectListings(
+            ownedListings.filter(
+              (listing) =>
+                String(listing.category || '').toLowerCase() === 'project',
+            ),
+          ),
+        )
+
+        const listingTitles = new Map()
+        const applicationListingIds = [
+          ...new Set(
+            ownApplications
+              .map((application) => application.listingId)
+              .filter(Boolean),
+          ),
+        ]
+
+        if (applicationListingIds.length > 0) {
+          const listingLookups = await Promise.allSettled(
+            applicationListingIds.map((listingId) => fetchListing(listingId)),
+          )
+
+          listingLookups.forEach((result, index) => {
+            if (result.status === 'fulfilled' && result.value?.title) {
+              listingTitles.set(applicationListingIds[index], result.value.title)
+            }
+          })
+        }
+
+        setRecentActivity(
+          buildRecentActivity({
+            listings: ownedListings,
+            applications: ownApplications,
+            listingTitles,
+          }),
+        )
+
+        if (listingsResult.status !== 'fulfilled') {
           setProjectListings([])
-          if (profileResult.status === 'fulfilled') {
-            setErrorMessage(
-              projectResult.reason?.message ||
-                'Could not load your project listings.',
-            )
-          }
+        }
+
+        if (
+          profileResult.status === 'fulfilled' &&
+          listingsResult.status !== 'fulfilled'
+        ) {
+          setErrorMessage(
+            listingsResult.reason?.message ||
+              'Could not load your listings.',
+          )
+        }
+
+        if (
+          profileResult.status === 'fulfilled' &&
+          listingsResult.status === 'fulfilled' &&
+          applicationsResult.status !== 'fulfilled'
+        ) {
+          setErrorMessage(
+            applicationsResult.reason?.message ||
+              'Could not load your recent activity.',
+          )
         }
       } finally {
         if (!ignore) {
@@ -509,7 +632,7 @@ export default function ProfilePage() {
             </div>
             <div className="prof-stats__sep" />
             <div className="prof-stats__item">
-              <strong>{mockRecentActivity.length}</strong>
+              <strong>{isLoading ? '—' : recentActivity.length}</strong>
               <span>Recent updates</span>
             </div>
           </div>
@@ -928,15 +1051,31 @@ export default function ProfilePage() {
           <section className="prof-card">
             <h3 className="prof-card__title">Recent Activity</h3>
             <ul className="prof-activity">
-              {mockRecentActivity.map((activity) => (
-                <li key={activity.id}>
+              {isLoading ? (
+                <li>
                   <span className="prof-activity__dot" />
                   <div>
-                    <p>{activity.message}</p>
-                    <time>{activity.occurred_at_label}</time>
+                    <p>Loading activity...</p>
                   </div>
                 </li>
-              ))}
+              ) : recentActivity.length === 0 ? (
+                <li>
+                  <span className="prof-activity__dot" />
+                  <div>
+                    <p>No recent activity yet.</p>
+                  </div>
+                </li>
+              ) : (
+                recentActivity.map((activity) => (
+                  <li key={activity.id}>
+                    <span className="prof-activity__dot" />
+                    <div>
+                      <p>{activity.message}</p>
+                      <time>{activity.occurred_at_label}</time>
+                    </div>
+                  </li>
+                ))
+              )}
             </ul>
           </section>
         </aside>

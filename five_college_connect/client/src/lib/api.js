@@ -94,6 +94,18 @@ export async function createListing(body) {
   return payload?.listing ?? null
 }
 
+export async function fetchListing(listingId) {
+  const payload = await apiRequest(`/api/listings/${listingId}`)
+  return payload?.listing ?? null
+}
+
+export async function fetchApplications(filters = {}) {
+  const payload = await apiRequest(
+    `/api/applications${buildQueryString(filters)}`,
+  )
+  return payload?.items ?? []
+}
+
 export async function fetchProfile(userId) {
   const payload = await apiRequest(`/api/profiles/${userId}`)
   return payload?.profile ?? null
