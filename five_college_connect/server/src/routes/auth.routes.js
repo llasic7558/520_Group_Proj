@@ -1,13 +1,18 @@
 import { Router } from "express";
 
-import { signIn, signUp } from "../controllers/auth.controller.js";
+import { resendVerificationEmail, signIn, signUp, verifyEmail } from "../controllers/auth.controller.js";
+import { requireAuth } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-// Week 2 deliverable: create the user account and initial profile information.
+// create the user account and initial profile information.
 router.post("/signup", signUp);
 
-// Week 2 deliverable: login endpoint for testing and frontend wiring.
+// login endpoint for testing and frontend wiring.
 router.post("/signin", signIn);
+
+// email verification endpoints
+router.get("/verify-email", verifyEmail);
+router.post("/verify-email/resend", requireAuth, resendVerificationEmail);
 
 export default router;

@@ -46,6 +46,14 @@ export class AuthenticationService {
     return argon2.verify(storedHash, password);
   }
 
+  createEmailVerificationToken() {
+    return crypto.randomBytes(32).toString("hex");
+  }
+
+  getEmailVerificationExpiry() {
+    return new Date(Date.now() + env.emailVerificationExpiresInHours * 60 * 60 * 1000);
+  }
+
   createAuthToken({ userId, email, role }) {
     const expiresAt = Date.now() + env.authTokenExpiresInHours * 60 * 60 * 1000;
 
