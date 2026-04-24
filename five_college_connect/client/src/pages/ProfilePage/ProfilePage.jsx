@@ -17,6 +17,7 @@ import {
   IconUserDoc,
   IconVerified,
 } from '../../components/opportunities/Icons.jsx'
+import { logError, logInfo, logWarn } from '../../lib/logger.js'
 import '../OpportunitiesPage/OpportunitiesPage.css'
 import './ProfilePage.css'
 
@@ -282,8 +283,18 @@ export default function ProfilePage() {
 
         if (profileResult.status === 'fulfilled') {
           setProfile(normalizeProfile(profileResult.value))
+          logInfo('Profile loaded', {
+            userId: user.id,
+          })
         } else {
           setProfile({ ...EMPTY_PROFILE, user_id: user.id })
+          logError('Profile failed to load', {
+            userId: user.id,
+            error:
+              profileResult.reason instanceof Error
+                ? profileResult.reason.message
+                : String(profileResult.reason),
+          })
           setErrorMessage(
             profileResult.reason?.message || 'Could not load your profile.',
           )
@@ -333,6 +344,11 @@ export default function ProfilePage() {
             listingTitles,
           }),
         )
+        logInfo('Profile related activity loaded', {
+          userId: user.id,
+          listingCount: ownedListings.length,
+          applicationCount: ownApplications.length,
+        })
 
         if (listingsResult.status !== 'fulfilled') {
           setProjectListings([])
@@ -342,6 +358,13 @@ export default function ProfilePage() {
           profileResult.status === 'fulfilled' &&
           listingsResult.status !== 'fulfilled'
         ) {
+          logWarn('Profile listings failed to load', {
+            userId: user.id,
+            error:
+              listingsResult.reason instanceof Error
+                ? listingsResult.reason.message
+                : String(listingsResult.reason),
+          })
           setErrorMessage(
             listingsResult.reason?.message ||
               'Could not load your listings.',
@@ -353,6 +376,13 @@ export default function ProfilePage() {
           listingsResult.status === 'fulfilled' &&
           applicationsResult.status !== 'fulfilled'
         ) {
+          logWarn('Profile applications failed to load', {
+            userId: user.id,
+            error:
+              applicationsResult.reason instanceof Error
+                ? applicationsResult.reason.message
+                : String(applicationsResult.reason),
+          })
           setErrorMessage(
             applicationsResult.reason?.message ||
               'Could not load your recent activity.',
@@ -463,9 +493,18 @@ export default function ProfilePage() {
         buildProfilePayload(draft),
       )
       setProfile(normalizeProfile(savedProfile))
+      logInfo('Profile updated', {
+        userId: user.id,
+        skillCount: draft.skills.length,
+        courseCount: draft.courses.length,
+      })
       setDraft(null)
       setIsEditing(false)
     } catch (err) {
+      logError('Profile update failed', {
+        userId: user.id,
+        error: err instanceof Error ? err.message : String(err),
+      })
       setErrorMessage(err?.message || 'Could not save your profile.')
     } finally {
       setIsSaving(false)

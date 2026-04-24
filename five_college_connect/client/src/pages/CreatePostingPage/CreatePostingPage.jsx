@@ -11,6 +11,7 @@ import {
   LogoCap,
 } from '../../components/opportunities/Icons.jsx'
 import { createListing } from '../../lib/api.js'
+import { logError, logInfo, logWarn } from '../../lib/logger.js'
 import './CreatePostingPage.css'
 
 // big buttons for listing category (same ids as backend category enum)
@@ -131,6 +132,7 @@ export default function CreatePostingPage() {
 
   const handlePublish = useCallback(async () => {
     if (!form.title.trim()) {
+      logWarn('Listing publish blocked because title is missing')
       setErrorMessage('A title is required before publishing.')
       return
     }
@@ -139,9 +141,17 @@ export default function CreatePostingPage() {
     setErrorMessage('')
 
     try {
-      await createListing(buildListingPayload(form, 'published'))
+      const listing = await createListing(buildListingPayload(form, 'published'))
+      logInfo('Listing published from create page', {
+        listingId: listing?.listingId,
+        category: form.category,
+      })
       navigate('/opportunities', { replace: true })
     } catch (err) {
+      logError('Listing publish failed', {
+        category: form.category,
+        error: err instanceof Error ? err.message : String(err),
+      })
       setErrorMessage(err?.message || 'Could not publish the listing.')
     } finally {
       setIsSubmitting(false)
