@@ -1,43 +1,136 @@
-import { useMemo, useState } from 'react'
-import { CATEGORY_IDS, getListingId, mockPostings } from '../../data/postings.js'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { CATEGORY_IDS, getListingId } from '../../data/postings.js'
 import { OpportunityDetail } from '../../components/opportunities/OpportunityDetail.jsx'
 import { PostingList } from '../../components/opportunities/PostingList.jsx'
 import { TopNav } from '../../components/opportunities/TopNav.jsx'
 import WelcomeBanner from '../../components/WelcomeBanner.jsx'
+import { fetchListings } from '../../lib/api.js'
 import './OpportunitiesPage.css'
 
-// main feed: list on the left, detail on the right
+function normalizeListing(listing) {
+  const skills = Array.isArray(listing?.skills) ? listing.skills : []
+  const profile = listing?.creator?.profile
+
+  return {
+    listing_id: listing?.listingId ?? null,
+    created_by_user_id: listing?.createdByUserId ?? null,
+    title: listing?.title ?? '',
+    description: listing?.description ?? '',
+    category: String(listing?.category || '').toLowerCase(),
+    contact_method: listing?.contactMethod ?? '',
+    contact_details: listing?.contactDetails ?? '',
+    banner_image_url: listing?.bannerImageUrl || null,
+    custom_color: listing?.customColor || null,
+    status: listing?.status ?? '',
+    expiration_date: listing?.expirationDate ?? null,
+    created_at: listing?.createdAt ?? null,
+    updated_at: listing?.updatedAt ?? null,
+    listing_skills: skills.map((skill) => ({
+      listing_skill_id: skill.listingSkillId,
+      listing_id: skill.listingId,
+      skill_id: skill.skillId,
+      skill_name: skill.name,
+      category: skill.category,
+      requirement_type: skill.requirementType,
+    })),
+    creator: listing?.creator
+      ? {
+          user_id: listing.creator.userId,
+          email_verified: Boolean(listing.creator.emailVerified),
+          teacher_badge: Boolean(listing.creator.teacherBadge),
+          profile: profile
+            ? {
+                profile_id: profile.profileId,
+                user_id: profile.userId,
+                full_name: profile.fullName,
+                bio: profile.bio,
+                college: profile.college,
+                major: profile.major,
+                graduation_year: profile.graduationYear,
+                interests: profile.interests,
+                availability: profile.availability,
+                looking_for: profile.lookingFor,
+                profile_image_url: profile.profileImageUrl,
+              }
+            : null,
+        }
+      : null,
+    location_short: '',
+    compensation_summary: '',
+    preferred_availability: [],
+    card_skill_labels: skills.map((skill) => skill.name).filter(Boolean).slice(0, 3),
+  }
+}
+
 export default function OpportunitiesPage() {
   const [activeFilter, setActiveFilter] = useState(CATEGORY_IDS.ALL)
-  const [selectedId, setSelectedId] = useState(
-    () => getListingId(mockPostings[0]) ?? null,
-  )
+  const [searchValue, setSearchValue] = useState('')
+  const [postings, setPostings] = useState([])
+  const [selectedId, setSelectedId] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
 
-  // only show postings that match the tutoring/project/etc chip
-  const filtered = useMemo(() => {
-    if (activeFilter === CATEGORY_IDS.ALL) return mockPostings
-    return mockPostings.filter((p) => p.category === activeFilter)
-  }, [activeFilter])
+  const deferredQuery = useDeferredValue(searchValue.trim())
 
-  // if you change filter and old selection is gone, fall back to first card
+  useEffect(() => {
+    let ignore = false
+
+    async function loadListings() {
+      setIsLoading(true)
+      setErrorMessage('')
+
+      try {
+        const items = await fetchListings({
+          category:
+            activeFilter === CATEGORY_IDS.ALL ? undefined : activeFilter,
+          query: deferredQuery,
+          limit: 20,
+        })
+
+        if (ignore) return
+        setPostings(items.map(normalizeListing))
+      } catch (err) {
+        if (ignore) return
+        setPostings([])
+        setErrorMessage(
+          err?.message || 'Could not load opportunities right now.',
+        )
+      } finally {
+        if (!ignore) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadListings()
+
+    return () => {
+      ignore = true
+    }
+  }, [activeFilter, deferredQuery])
+
   const resolvedSelectedId = useMemo(() => {
-    if (filtered.length === 0) return null
-    if (selectedId && filtered.some((p) => getListingId(p) === selectedId)) {
+    if (postings.length === 0) return null
+    if (selectedId && postings.some((p) => getListingId(p) === selectedId)) {
       return selectedId
     }
-    return getListingId(filtered[0])
-  }, [filtered, selectedId])
+    return getListingId(postings[0])
+  }, [postings, selectedId])
 
   const selectedPosting =
-    filtered.find((p) => getListingId(p) === resolvedSelectedId) ?? null
+    postings.find((p) => getListingId(p) === resolvedSelectedId) ?? null
 
   return (
     <div className="fcc-app">
-      <TopNav />
+      <TopNav
+        searchPlaceholder="Search opportunities..."
+        searchValue={searchValue}
+        onSearchChange={(e) => setSearchValue(e.target.value)}
+      />
       <WelcomeBanner />
       <div className="fcc-shell">
         <PostingList
-          postings={filtered}
+          postings={postings}
           selectedId={resolvedSelectedId}
           onSelect={setSelectedId}
           activeFilter={activeFilter}
@@ -47,7 +140,21 @@ export default function OpportunitiesPage() {
           }}
         />
         <main className="fcc-main">
-          <OpportunityDetail posting={selectedPosting} />
+          {isLoading ? (
+            <section className="fcc-detail fcc-detail--empty">
+              <p>Loading opportunities...</p>
+            </section>
+          ) : errorMessage ? (
+            <section className="fcc-detail fcc-detail--empty">
+              <p>{errorMessage}</p>
+            </section>
+          ) : !selectedPosting ? (
+            <section className="fcc-detail fcc-detail--empty">
+              <p>No opportunities matched your current filters.</p>
+            </section>
+          ) : (
+            <OpportunityDetail posting={selectedPosting} />
+          )}
         </main>
       </div>
     </div>
