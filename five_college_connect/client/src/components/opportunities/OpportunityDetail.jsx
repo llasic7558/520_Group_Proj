@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { createApplication } from '../../lib/api.js'
+import { useAuth } from '../../context/AuthContext.js'
 import {
   CATEGORY_META,
   contactMethodLabel,
@@ -31,12 +33,15 @@ export function OpportunityDetail({
   hasApplied = false,
   onApplicationCreated,
 }) {
+  const { user: currentUser } = useAuth()
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false)
   const [applicationMessage, setApplicationMessage] = useState('')
   const [applicationError, setApplicationError] = useState('')
   const [isSubmittingApplication, setIsSubmittingApplication] = useState(false)
 
   const listingId = posting?.listing_id
+  const isOwner =
+    Boolean(currentUser?.id) && currentUser.id === posting?.created_by_user_id
 
   useEffect(() => {
     setIsApplyModalOpen(false)
@@ -261,18 +266,28 @@ export function OpportunityDetail({
       </div>
 
       <footer className="fcc-detail__footer">
-        <button
-          type="button"
-          className="fcc-btn fcc-btn--primary fcc-btn--grow"
-          onClick={() => {
-            setApplicationError('')
-            setIsApplyModalOpen(true)
-          }}
-          disabled={hasApplied}
-        >
-          <IconSend />
-          {hasApplied ? 'Application Sent' : 'Apply Now'}
-        </button>
+        {isOwner ? (
+          <Link
+            to={`/postings/${listingId}/applications`}
+            className="fcc-btn fcc-btn--primary fcc-btn--grow"
+          >
+            <IconMessage />
+            View Applications
+          </Link>
+        ) : (
+          <button
+            type="button"
+            className="fcc-btn fcc-btn--primary fcc-btn--grow"
+            onClick={() => {
+              setApplicationError('')
+              setIsApplyModalOpen(true)
+            }}
+            disabled={hasApplied}
+          >
+            <IconSend />
+            {hasApplied ? 'Application Sent' : 'Apply Now'}
+          </button>
+        )}
         <button type="button" className="fcc-btn fcc-btn--outline">
           <IconMessage />
           Email
