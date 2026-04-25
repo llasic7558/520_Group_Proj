@@ -1,54 +1,480 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { TopNav } from '../../components/opportunities/TopNav.jsx'
-import { IconGithub, IconMail, IconPin, IconShare, IconUserDoc, IconVerified } from '../../components/opportunities/Icons.jsx'
+import { useAuth } from '../../context/AuthContext.js'
 import {
-  mockContact,
-  mockProfileSeed,
-  mockProfileStats,
-  mockProjects,
-  mockRecentActivity,
-  mockUser,
-  mockUserCourses,
-  mockUserSkills,
-} from '../../data/mockProfile.js'
+  fetchApplications,
+  fetchListing,
+  fetchListings,
+  fetchProfile,
+  updateProfile,
+} from '../../lib/api.js'
+import { TopNav } from '../../components/opportunities/TopNav.jsx'
+import {
+  IconGithub,
+  IconMail,
+  IconPin,
+  IconShare,
+  IconUserDoc,
+  IconVerified,
+} from '../../components/opportunities/Icons.jsx'
 import '../OpportunitiesPage/OpportunitiesPage.css'
 import './ProfilePage.css'
 
-// picks a slightly different style for "codey" skills on the cards
+const PROFICIENCY_OPTIONS = [
+  'beginner',
+  'intermediate',
+  'advanced',
+  'expert',
+]
+
+const COURSE_STATUS_OPTIONS = [
+  'completed',
+  'in-progress',
+  'planned',
+  'dropped',
+]
+
+const EMPTY_PROFILE = {
+  profile_id: null,
+  user_id: null,
+  full_name: '',
+  bio: '',
+  college: '',
+  major: '',
+  graduation_year: '',
+  interests: '',
+  availability: '',
+  looking_for: '',
+  profile_image_url: '',
+  skills: [],
+  courses: [],
+}
+
+function createDraftSkill() {
+  return {
+    user_skill_id: `skill-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    skill_name: '',
+    category: 'General',
+    proficiency_level: 'intermediate',
+    is_offering_help: false,
+    is_seeking_help: false,
+  }
+}
+
+function createDraftCourse() {
+  return {
+    user_course_id: `course-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    course_code: '',
+    course_name: '',
+    institution: '',
+    status: 'completed',
+    grade: '',
+  }
+}
+
+function normalizeProfile(profile) {
+  return {
+    profile_id: profile?.profileId ?? null,
+    user_id: profile?.userId ?? null,
+    full_name: profile?.fullName ?? '',
+    bio: profile?.bio ?? '',
+    college: profile?.college ?? '',
+    major: profile?.major ?? '',
+    graduation_year: profile?.graduationYear ?? '',
+    interests: profile?.interests ?? '',
+    availability: profile?.availability ?? '',
+    looking_for: profile?.lookingFor ?? '',
+    profile_image_url: profile?.profileImageUrl ?? '',
+    skills: Array.isArray(profile?.skills)
+      ? profile.skills.map((skill) => ({
+          user_skill_id:
+            skill.userSkillId ??
+            `skill-${Math.random().toString(36).slice(2, 8)}`,
+          user_id: skill.userId,
+          profile_id: skill.profileId,
+          skill_id: skill.skillId,
+          skill_name: skill.name,
+          category: skill.category,
+          proficiency_level: skill.proficiencyLevel,
+          is_offering_help: skill.isOfferingHelp,
+          is_seeking_help: skill.isSeekingHelp,
+        }))
+      : [],
+    courses: Array.isArray(profile?.courses)
+      ? profile.courses.map((course) => ({
+          user_course_id:
+            course.userCourseId ??
+            `course-${Math.random().toString(36).slice(2, 8)}`,
+          user_id: course.userId,
+          profile_id: course.profileId,
+          course_id: course.courseId,
+          course_code: course.courseCode,
+          course_name: course.courseName,
+          institution: course.institution,
+          status: course.status,
+          grade: course.grade,
+        }))
+      : [],
+  }
+}
+
+function buildProfilePayload(profile) {
+  return {
+    fullName: profile.full_name.trim(),
+    bio: profile.bio.trim(),
+    college: profile.college.trim(),
+    major: profile.major.trim(),
+    graduationYear:
+      profile.graduation_year === '' ? null : Number(profile.graduation_year),
+    interests: profile.interests.trim(),
+    availability: profile.availability.trim(),
+    lookingFor: profile.looking_for.trim(),
+    profileImageUrl: profile.profile_image_url.trim(),
+    skills: (profile.skills ?? [])
+      .map((skill) => ({
+        name: skill.skill_name.trim(),
+        category: (skill.category || 'General').trim(),
+        proficiencyLevel: (
+          skill.proficiency_level || 'intermediate'
+        ).trim(),
+        isOfferingHelp: Boolean(skill.is_offering_help),
+        isSeekingHelp: Boolean(skill.is_seeking_help),
+      }))
+      .filter((skill) => skill.name),
+    courses: (profile.courses ?? [])
+      .map((course) => ({
+        courseCode: course.course_code.trim(),
+        courseName: course.course_name.trim(),
+        institution: course.institution.trim(),
+        status: course.status.trim(),
+        grade: course.grade.trim(),
+      }))
+      .filter((course) => course.courseCode),
+  }
+}
+
 function skillIconClass(name) {
   const n = name.toLowerCase()
-  if (n.includes('java') || n.includes('script') || n.includes('python') || n.includes('react') || n.includes('node')) {
+  if (
+    n.includes('java') ||
+    n.includes('script') ||
+    n.includes('python') ||
+    n.includes('react') ||
+    n.includes('node')
+  ) {
     return 'prof-skill-card__icon prof-skill-card__icon--code'
   }
   return 'prof-skill-card__icon'
 }
 
+function normalizeProjectListings(items) {
+  if (!Array.isArray(items)) return []
+
+  return items.map((listing) => ({
+    project_id: listing.listingId,
+    title: listing.title || 'Untitled project',
+    description: listing.description || 'No description provided.',
+    tags: Array.isArray(listing.skills)
+      ? listing.skills
+          .map((skill) => skill.name)
+          .filter(Boolean)
+          .slice(0, 4)
+      : [],
+  }))
+}
+
+function formatRelativeTime(iso) {
+  if (!iso) return 'Recently'
+
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return 'Recently'
+
+  const diffMs = Date.now() - date.getTime()
+  const diffMinutes = Math.max(1, Math.round(diffMs / 60000))
+
+  if (diffMinutes < 60) return `${diffMinutes}m ago`
+
+  const diffHours = Math.round(diffMinutes / 60)
+  if (diffHours < 24) return `${diffHours}h ago`
+
+  const diffDays = Math.round(diffHours / 24)
+  if (diffDays < 7) return `${diffDays}d ago`
+
+  return date.toLocaleDateString()
+}
+
+function buildRecentActivity({ listings, applications, listingTitles }) {
+  const listingActivity = (listings ?? []).map((listing) => {
+    const category = String(listing.category || 'opportunity').toLowerCase()
+    const label =
+      category === 'study_group'
+        ? 'study group'
+        : category || 'opportunity'
+
+    return {
+      id: `listing-${listing.listingId}`,
+      message: `Created a ${label} posting: ${listing.title}`,
+      occurredAt: listing.createdAt,
+      occurred_at_label: formatRelativeTime(listing.createdAt),
+    }
+  })
+
+  const applicationActivity = (applications ?? []).map((application) => {
+    const listingTitle =
+      listingTitles.get(application.listingId) || 'a listing'
+
+    return {
+      id: `application-${application.applicationId}`,
+      message: `Applied to ${listingTitle}`,
+      occurredAt: application.submittedAt,
+      occurred_at_label: formatRelativeTime(application.submittedAt),
+    }
+  })
+
+  return [...listingActivity, ...applicationActivity]
+    .filter((item) => item.occurredAt)
+    .sort((left, right) => {
+      return new Date(right.occurredAt) - new Date(left.occurredAt)
+    })
+    .slice(0, 6)
+}
+
 export default function ProfilePage() {
-  // saved profile fields (starts from mock json)
-  const [profile, setProfile] = useState(() => ({ ...mockProfileSeed }))
+  const { user } = useAuth()
+  const [profile, setProfile] = useState(null)
+  const [projectListings, setProjectListings] = useState([])
+  const [recentActivity, setRecentActivity] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
-  // temporary copy while youre editing so cancel can throw it away
+  const [isSaving, setIsSaving] = useState(false)
   const [draft, setDraft] = useState(null)
+  const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadProfile() {
+      if (!user?.id) {
+        if (!ignore) {
+          setProfile({ ...EMPTY_PROFILE })
+          setIsLoading(false)
+        }
+        return
+      }
+
+      setIsLoading(true)
+      setErrorMessage('')
+
+      try {
+        const [profileResult, listingsResult, applicationsResult] =
+          await Promise.allSettled([
+          fetchProfile(user.id),
+          fetchListings({
+            createdByUserId: user.id,
+            limit: 10,
+          }),
+          fetchApplications({
+            limit: 10,
+          }),
+        ])
+
+        if (ignore) return
+
+        if (profileResult.status === 'fulfilled') {
+          setProfile(normalizeProfile(profileResult.value))
+        } else {
+          setProfile({ ...EMPTY_PROFILE, user_id: user.id })
+          setErrorMessage(
+            profileResult.reason?.message || 'Could not load your profile.',
+          )
+        }
+
+        const ownedListings =
+          listingsResult.status === 'fulfilled' ? listingsResult.value : []
+        const ownApplications =
+          applicationsResult.status === 'fulfilled'
+            ? applicationsResult.value
+            : []
+
+        setProjectListings(
+          normalizeProjectListings(
+            ownedListings.filter(
+              (listing) =>
+                String(listing.category || '').toLowerCase() === 'project',
+            ),
+          ),
+        )
+
+        const listingTitles = new Map()
+        const applicationListingIds = [
+          ...new Set(
+            ownApplications
+              .map((application) => application.listingId)
+              .filter(Boolean),
+          ),
+        ]
+
+        if (applicationListingIds.length > 0) {
+          const listingLookups = await Promise.allSettled(
+            applicationListingIds.map((listingId) => fetchListing(listingId)),
+          )
+
+          listingLookups.forEach((result, index) => {
+            if (result.status === 'fulfilled' && result.value?.title) {
+              listingTitles.set(applicationListingIds[index], result.value.title)
+            }
+          })
+        }
+
+        setRecentActivity(
+          buildRecentActivity({
+            listings: ownedListings,
+            applications: ownApplications,
+            listingTitles,
+          }),
+        )
+
+        if (listingsResult.status !== 'fulfilled') {
+          setProjectListings([])
+        }
+
+        if (
+          profileResult.status === 'fulfilled' &&
+          listingsResult.status !== 'fulfilled'
+        ) {
+          setErrorMessage(
+            listingsResult.reason?.message ||
+              'Could not load your listings.',
+          )
+        }
+
+        if (
+          profileResult.status === 'fulfilled' &&
+          listingsResult.status === 'fulfilled' &&
+          applicationsResult.status !== 'fulfilled'
+        ) {
+          setErrorMessage(
+            applicationsResult.reason?.message ||
+              'Could not load your recent activity.',
+          )
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadProfile()
+
+    return () => {
+      ignore = true
+    }
+  }, [user?.id])
 
   function startEdit() {
-    setDraft({ ...profile })
+    if (!profile) return
+    setDraft({
+      ...profile,
+      skills: profile.skills.map((skill) => ({ ...skill })),
+      courses: profile.courses.map((course) => ({ ...course })),
+    })
+    setErrorMessage('')
     setIsEditing(true)
   }
 
   function cancelEdit() {
     setDraft(null)
     setIsEditing(false)
+    setErrorMessage('')
   }
 
-  function saveEdit() {
-    if (draft) setProfile(draft)
-    setDraft(null)
-    setIsEditing(false)
+  function updateSkill(index, field, value) {
+    setDraft((current) => {
+      if (!current) return current
+      const skills = current.skills.map((skill, skillIndex) =>
+        skillIndex === index ? { ...skill, [field]: value } : skill,
+      )
+      return { ...current, skills }
+    })
   }
 
-  // what we show in the ui (either live profile or the unsaved draft)
-  const display = isEditing && draft ? draft : profile
+  function addSkill() {
+    setDraft((current) => {
+      if (!current) return current
+      return {
+        ...current,
+        skills: [...current.skills, createDraftSkill()],
+      }
+    })
+  }
+
+  function removeSkill(index) {
+    setDraft((current) => {
+      if (!current) return current
+      return {
+        ...current,
+        skills: current.skills.filter((_, skillIndex) => skillIndex !== index),
+      }
+    })
+  }
+
+  function updateCourse(index, field, value) {
+    setDraft((current) => {
+      if (!current) return current
+      const courses = current.courses.map((course, courseIndex) =>
+        courseIndex === index ? { ...course, [field]: value } : course,
+      )
+      return { ...current, courses }
+    })
+  }
+
+  function addCourse() {
+    setDraft((current) => {
+      if (!current) return current
+      return {
+        ...current,
+        courses: [...current.courses, createDraftCourse()],
+      }
+    })
+  }
+
+  function removeCourse(index) {
+    setDraft((current) => {
+      if (!current) return current
+      return {
+        ...current,
+        courses: current.courses.filter(
+          (_, courseIndex) => courseIndex !== index,
+        ),
+      }
+    })
+  }
+
+  async function saveEdit() {
+    if (!draft || !user?.id) return
+
+    setIsSaving(true)
+    setErrorMessage('')
+
+    try {
+      const savedProfile = await updateProfile(
+        user.id,
+        buildProfilePayload(draft),
+      )
+      setProfile(normalizeProfile(savedProfile))
+      setDraft(null)
+      setIsEditing(false)
+    } catch (err) {
+      setErrorMessage(err?.message || 'Could not save your profile.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const display = isEditing && draft ? draft : profile ?? EMPTY_PROFILE
+  const skills = display.skills ?? []
+  const courses = display.courses ?? []
 
   return (
     <div className="prof-app">
@@ -56,34 +482,56 @@ export default function ProfilePage() {
 
       <div className="prof-shell">
         <div className="prof-main">
+          {errorMessage ? (
+            <p
+              role="alert"
+              style={{
+                color: '#b00020',
+                background: '#fdecea',
+                border: '1px solid #f5c2c7',
+                padding: '0.75rem 1rem',
+                borderRadius: 12,
+                marginBottom: '1rem',
+              }}
+            >
+              {errorMessage}
+            </p>
+          ) : null}
+
           <header className="prof-hero">
             <div className="prof-hero__banner" />
             <div className="prof-hero__inner">
               <div className="prof-hero__avatar-wrap">
-                {/* no real image url in mock data yet so its just a gray circle */}
-                <div className="prof-hero__avatar" role="img" aria-label={display.full_name} />
-                {mockUser.email_verified ? (
+                <div
+                  className="prof-hero__avatar"
+                  role="img"
+                  aria-label={display.full_name || 'Profile avatar'}
+                />
+                {user?.emailVerified ? (
                   <span className="prof-hero__verified" title="Verified student">
                     <IconVerified />
                   </span>
                 ) : null}
               </div>
               <div className="prof-hero__info">
-                {/* edit mode shows a small grid of inputs instead of the big name text */}
                 {isEditing && draft ? (
                   <div className="prof-edit-fields prof-edit-fields--hero">
                     <label className="prof-field">
                       <span>Full name</span>
                       <input
                         value={draft.full_name}
-                        onChange={(e) => setDraft({ ...draft, full_name: e.target.value })}
+                        onChange={(e) =>
+                          setDraft({ ...draft, full_name: e.target.value })
+                        }
                       />
                     </label>
                     <label className="prof-field">
                       <span>College</span>
                       <input
                         value={draft.college}
-                        onChange={(e) => setDraft({ ...draft, college: e.target.value })}
+                        onChange={(e) =>
+                          setDraft({ ...draft, college: e.target.value })
+                        }
                       />
                     </label>
                     <label className="prof-field">
@@ -92,8 +540,10 @@ export default function ProfilePage() {
                         type="number"
                         value={draft.graduation_year}
                         onChange={(e) =>
-                          // empty input becomes '' so we dont save nan
-                          setDraft({ ...draft, graduation_year: Number(e.target.value) || '' })
+                          setDraft({
+                            ...draft,
+                            graduation_year: Number(e.target.value) || '',
+                          })
                         }
                       />
                     </label>
@@ -101,35 +551,61 @@ export default function ProfilePage() {
                       <span>Major</span>
                       <input
                         value={draft.major}
-                        onChange={(e) => setDraft({ ...draft, major: e.target.value })}
+                        onChange={(e) =>
+                          setDraft({ ...draft, major: e.target.value })
+                        }
                       />
                     </label>
                   </div>
                 ) : (
                   <>
-                    <h1 className="prof-hero__name">{display.full_name}</h1>
+                    <h1 className="prof-hero__name">
+                      {display.full_name || 'Your profile'}
+                    </h1>
                     <p className="prof-hero__line">
-                      {display.college} • Class of {display.graduation_year || '—'}
+                      {display.college || 'College not set'} • Class of{' '}
+                      {display.graduation_year || '—'}
                     </p>
-                    <p className="prof-hero__major">{display.major}</p>
+                    <p className="prof-hero__major">
+                      {display.major || 'Major not set'}
+                    </p>
                   </>
                 )}
                 <div className="prof-hero__actions">
                   {isEditing ? (
                     <>
-                      <button type="button" className="prof-btn prof-btn--primary" onClick={saveEdit}>
-                        Save changes
+                      <button
+                        type="button"
+                        className="prof-btn prof-btn--primary"
+                        onClick={saveEdit}
+                        disabled={isSaving}
+                      >
+                        {isSaving ? 'Saving...' : 'Save changes'}
                       </button>
-                      <button type="button" className="prof-btn prof-btn--outline" onClick={cancelEdit}>
+                      <button
+                        type="button"
+                        className="prof-btn prof-btn--outline"
+                        onClick={cancelEdit}
+                        disabled={isSaving}
+                      >
                         Cancel
                       </button>
                     </>
                   ) : (
                     <>
-                      <button type="button" className="prof-btn prof-btn--primary" onClick={startEdit}>
+                      <button
+                        type="button"
+                        className="prof-btn prof-btn--primary"
+                        onClick={startEdit}
+                        disabled={isLoading}
+                      >
                         Edit Profile
                       </button>
-                      <button type="button" className="prof-icon-round" aria-label="Share profile">
+                      <button
+                        type="button"
+                        className="prof-icon-round"
+                        aria-label="Share profile"
+                      >
                         <IconShare />
                       </button>
                     </>
@@ -141,23 +617,23 @@ export default function ProfilePage() {
 
           <div className="prof-stats">
             <div className="prof-stats__item">
-              <strong>{mockProfileStats.connection_count}</strong>
-              <span>Connections</span>
-            </div>
-            <div className="prof-stats__sep" />
-            <div className="prof-stats__item">
-              <strong>{mockProfileStats.skill_count}</strong>
+              <strong>{isLoading ? '—' : skills.length}</strong>
               <span>Skills</span>
             </div>
             <div className="prof-stats__sep" />
             <div className="prof-stats__item">
-              <strong>{mockProfileStats.project_count}</strong>
+              <strong>{isLoading ? '—' : courses.length}</strong>
+              <span>Courses</span>
+            </div>
+            <div className="prof-stats__sep" />
+            <div className="prof-stats__item">
+              <strong>{isLoading ? '—' : projectListings.length}</strong>
               <span>Projects</span>
             </div>
             <div className="prof-stats__sep" />
             <div className="prof-stats__item">
-              <strong>{mockProfileStats.application_count}</strong>
-              <span>Applications</span>
+              <strong>{isLoading ? '—' : recentActivity.length}</strong>
+              <span>Recent updates</span>
             </div>
           </div>
 
@@ -176,76 +652,310 @@ export default function ProfilePage() {
                 />
               </label>
             ) : (
-              <p className="prof-section__body">{display.bio}</p>
+              <p className="prof-section__body">
+                {isLoading
+                  ? 'Loading profile...'
+                  : display.bio || 'Add a short bio to introduce yourself.'}
+              </p>
             )}
           </section>
 
           <section className="prof-section">
             <div className="prof-section__head">
               <h2 className="prof-section__title">Skills &amp; Expertise</h2>
-              <button type="button" className="prof-link-btn" disabled={isEditing}>
-                + Add Skill
-              </button>
+              {isEditing ? (
+                <button
+                  type="button"
+                  className="prof-link-btn"
+                  onClick={addSkill}
+                  disabled={isSaving}
+                >
+                  + Add Skill
+                </button>
+              ) : null}
             </div>
-            <div className="prof-skills">
-              {mockUserSkills.map((s) => (
-                <div key={s.user_skill_id} className="prof-skill-card">
-                  {/* fake icon, real app would use per-skill icons */}
-                  <span className={skillIconClass(s.skill_name)} aria-hidden>
-                    {'</>'}
-                  </span>
-                  <div>
-                    <div className="prof-skill-card__name">{s.skill_name}</div>
-                    <div className="prof-skill-card__level">{s.proficiency_level}</div>
+            {isEditing && draft ? (
+              <div className="prof-editor-list">
+                {skills.length === 0 ? (
+                  <p className="prof-section__body">
+                    Add skills you can teach, use, or want help with.
+                  </p>
+                ) : null}
+                {skills.map((skill, index) => (
+                  <div key={skill.user_skill_id} className="prof-editor-card">
+                    <div className="prof-editor-grid prof-editor-grid--skills">
+                      <label className="prof-field">
+                        <span>Skill</span>
+                        <input
+                          value={skill.skill_name}
+                          onChange={(e) =>
+                            updateSkill(index, 'skill_name', e.target.value)
+                          }
+                          placeholder="React"
+                        />
+                      </label>
+                      <label className="prof-field">
+                        <span>Category</span>
+                        <input
+                          value={skill.category}
+                          onChange={(e) =>
+                            updateSkill(index, 'category', e.target.value)
+                          }
+                          placeholder="Frameworks"
+                        />
+                      </label>
+                      <label className="prof-field">
+                        <span>Level</span>
+                        <select
+                          value={skill.proficiency_level || 'intermediate'}
+                          onChange={(e) =>
+                            updateSkill(
+                              index,
+                              'proficiency_level',
+                              e.target.value,
+                            )
+                          }
+                        >
+                          {PROFICIENCY_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <div className="prof-editor-actions">
+                      <label className="prof-check">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(skill.is_offering_help)}
+                          onChange={(e) =>
+                            updateSkill(
+                              index,
+                              'is_offering_help',
+                              e.target.checked,
+                            )
+                          }
+                        />
+                        <span>I can help others with this</span>
+                      </label>
+                      <label className="prof-check">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(skill.is_seeking_help)}
+                          onChange={(e) =>
+                            updateSkill(
+                              index,
+                              'is_seeking_help',
+                              e.target.checked,
+                            )
+                          }
+                        />
+                        <span>I want help with this</span>
+                      </label>
+                      <button
+                        type="button"
+                        className="prof-remove-btn"
+                        onClick={() => removeSkill(index)}
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="prof-skills">
+                {skills.length === 0 ? (
+                  <p className="prof-section__body">No skills added yet.</p>
+                ) : (
+                  skills.map((skill) => (
+                    <div key={skill.user_skill_id} className="prof-skill-card">
+                      <span
+                        className={skillIconClass(skill.skill_name)}
+                        aria-hidden
+                      >
+                        {'</>'}
+                      </span>
+                      <div>
+                        <div className="prof-skill-card__name">
+                          {skill.skill_name}
+                        </div>
+                        <div className="prof-skill-card__level">
+                          {skill.proficiency_level || 'Not specified'}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </section>
 
           <section className="prof-section">
             <div className="prof-section__head">
               <h2 className="prof-section__title">Completed Courses</h2>
-              <Link className="prof-text-link" to="/opportunities">
-                View All (24)
-              </Link>
+              {isEditing ? (
+                <button
+                  type="button"
+                  className="prof-link-btn"
+                  onClick={addCourse}
+                  disabled={isSaving}
+                >
+                  + Add Course
+                </button>
+              ) : (
+                <Link className="prof-text-link" to="/opportunities">
+                  View All ({courses.length})
+                </Link>
+              )}
             </div>
-            <div className="prof-courses">
-              {mockUserCourses.map((c) => (
-                <div key={c.user_course_id} className="prof-course-card">
-                  <div className="prof-course-card__name">
-                    {c.course_code} {c.course_name}
+            {isEditing && draft ? (
+              <div className="prof-editor-list">
+                {courses.length === 0 ? (
+                  <p className="prof-section__body">
+                    Add completed or in-progress classes to strengthen your
+                    profile.
+                  </p>
+                ) : null}
+                {courses.map((course, index) => (
+                  <div key={course.user_course_id} className="prof-editor-card">
+                    <div className="prof-editor-grid prof-editor-grid--courses">
+                      <label className="prof-field">
+                        <span>Course code</span>
+                        <input
+                          value={course.course_code}
+                          onChange={(e) =>
+                            updateCourse(index, 'course_code', e.target.value)
+                          }
+                          placeholder="COMPSCI 520"
+                        />
+                      </label>
+                      <label className="prof-field">
+                        <span>Course name</span>
+                        <input
+                          value={course.course_name}
+                          onChange={(e) =>
+                            updateCourse(index, 'course_name', e.target.value)
+                          }
+                          placeholder="Software Engineering"
+                        />
+                      </label>
+                      <label className="prof-field">
+                        <span>Institution</span>
+                        <input
+                          value={course.institution}
+                          onChange={(e) =>
+                            updateCourse(index, 'institution', e.target.value)
+                          }
+                          placeholder="UMass Amherst"
+                        />
+                      </label>
+                      <label className="prof-field">
+                        <span>Status</span>
+                        <select
+                          value={course.status || 'completed'}
+                          onChange={(e) =>
+                            updateCourse(index, 'status', e.target.value)
+                          }
+                        >
+                          {COURSE_STATUS_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="prof-field">
+                        <span>Grade</span>
+                        <input
+                          value={course.grade}
+                          onChange={(e) =>
+                            updateCourse(index, 'grade', e.target.value)
+                          }
+                          placeholder="A"
+                        />
+                      </label>
+                    </div>
+                    <div className="prof-editor-actions">
+                      <button
+                        type="button"
+                        className="prof-remove-btn"
+                        onClick={() => removeCourse(index)}
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
-                  <div className="prof-course-card__grade">{c.grade}</div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="prof-courses">
+                {courses.length === 0 ? (
+                  <p className="prof-section__body">No courses added yet.</p>
+                ) : (
+                  courses.map((course) => (
+                    <div key={course.user_course_id} className="prof-course-card">
+                      <div className="prof-course-card__name">
+                        {course.course_code} {course.course_name}
+                      </div>
+                      <div className="prof-course-card__grade">
+                        {course.grade || '—'}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </section>
 
           <section className="prof-section">
             <div className="prof-section__head">
               <h2 className="prof-section__title">Featured Projects</h2>
-              <button type="button" className="prof-link-btn" disabled={isEditing}>
-                + Add Project
-              </button>
+              {isEditing ? (
+                <button
+                  type="button"
+                  className="prof-link-btn"
+                  disabled
+                >
+                  + Add Project
+                </button>
+              ) : (
+                <Link className="prof-text-link" to="/postings/new">
+                  Create Project
+                </Link>
+              )}
             </div>
             <div className="prof-projects">
-              {mockProjects.map((p) => (
-                <article key={p.project_id} className="prof-project-card">
-                  <div className="prof-project-card__thumb" aria-hidden />
-                  <div className="prof-project-card__body">
-                    <h3 className="prof-project-card__title">{p.title}</h3>
-                    <p className="prof-project-card__desc">{p.description}</p>
-                    <div className="prof-project-card__tags">
-                      {p.tags.map((t) => (
-                        <span key={t} className="prof-tag">
-                          {t}
-                        </span>
-                      ))}
+              {isLoading ? (
+                <p className="prof-section__body">Loading projects...</p>
+              ) : projectListings.length === 0 ? (
+                <p className="prof-section__body">
+                  No project listings yet. Create a posting in the project
+                  category to show work here.
+                </p>
+              ) : (
+                projectListings.map((project) => (
+                  <article key={project.project_id} className="prof-project-card">
+                    <div className="prof-project-card__thumb" aria-hidden />
+                    <div className="prof-project-card__body">
+                      <h3 className="prof-project-card__title">{project.title}</h3>
+                      <p className="prof-project-card__desc">
+                        {project.description}
+                      </p>
+                      {project.tags.length > 0 ? (
+                        <div className="prof-project-card__tags">
+                          {project.tags.map((tag) => (
+                            <span key={tag} className="prof-tag">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                ))
+              )}
             </div>
           </section>
         </div>
@@ -258,13 +968,19 @@ export default function ProfilePage() {
                 <textarea
                   rows={3}
                   value={draft.availability}
-                  onChange={(e) => setDraft({ ...draft, availability: e.target.value })}
+                  onChange={(e) =>
+                    setDraft({ ...draft, availability: e.target.value })
+                  }
                 />
               </label>
             ) : (
-              <p className="prof-card__text">{display.availability}</p>
+              <p className="prof-card__text">
+                {display.availability || 'Add your availability.'}
+              </p>
             )}
-            <span className="prof-pill prof-pill--ok">Available for opportunities</span>
+            <span className="prof-pill prof-pill--ok">
+              Available for opportunities
+            </span>
           </section>
 
           <section className="prof-card">
@@ -272,17 +988,15 @@ export default function ProfilePage() {
             <ul className="prof-contact-list">
               <li>
                 <IconMail />
-                {mockContact.email}
+                {user?.email || 'Email unavailable'}
               </li>
               <li>
                 <IconPin />
-                {mockContact.location}
+                {display.college || 'Location unavailable'}
               </li>
               <li>
                 <IconGithub />
-                <a href={mockContact.github_url} target="_blank" rel="noreferrer">
-                  GitHub
-                </a>
+                <span>GitHub not connected</span>
               </li>
             </ul>
           </section>
@@ -294,11 +1008,15 @@ export default function ProfilePage() {
                 <textarea
                   rows={3}
                   value={draft.looking_for}
-                  onChange={(e) => setDraft({ ...draft, looking_for: e.target.value })}
+                  onChange={(e) =>
+                    setDraft({ ...draft, looking_for: e.target.value })
+                  }
                 />
               </label>
             ) : (
-              <p className="prof-card__text">{display.looking_for}</p>
+              <p className="prof-card__text">
+                {display.looking_for || 'Add what you are looking for.'}
+              </p>
             )}
           </section>
 
@@ -310,19 +1028,20 @@ export default function ProfilePage() {
                 <textarea
                   rows={2}
                   value={draft.interests}
-                  onChange={(e) => setDraft({ ...draft, interests: e.target.value })}
+                  onChange={(e) =>
+                    setDraft({ ...draft, interests: e.target.value })
+                  }
                 />
               </label>
             ) : (
               <div className="prof-tags">
-                {/* interests is one string in the db, we split on commas for chips */}
                 {display.interests
                   .split(',')
-                  .map((t) => t.trim())
+                  .map((tag) => tag.trim())
                   .filter(Boolean)
-                  .map((t) => (
-                    <span key={t} className="prof-tag prof-tag--muted">
-                      {t}
+                  .map((tag) => (
+                    <span key={tag} className="prof-tag prof-tag--muted">
+                      {tag}
                     </span>
                   ))}
               </div>
@@ -332,15 +1051,31 @@ export default function ProfilePage() {
           <section className="prof-card">
             <h3 className="prof-card__title">Recent Activity</h3>
             <ul className="prof-activity">
-              {mockRecentActivity.map((a) => (
-                <li key={a.id}>
+              {isLoading ? (
+                <li>
                   <span className="prof-activity__dot" />
                   <div>
-                    <p>{a.message}</p>
-                    <time>{a.occurred_at_label}</time>
+                    <p>Loading activity...</p>
                   </div>
                 </li>
-              ))}
+              ) : recentActivity.length === 0 ? (
+                <li>
+                  <span className="prof-activity__dot" />
+                  <div>
+                    <p>No recent activity yet.</p>
+                  </div>
+                </li>
+              ) : (
+                recentActivity.map((activity) => (
+                  <li key={activity.id}>
+                    <span className="prof-activity__dot" />
+                    <div>
+                      <p>{activity.message}</p>
+                      <time>{activity.occurred_at_label}</time>
+                    </div>
+                  </li>
+                ))
+              )}
             </ul>
           </section>
         </aside>

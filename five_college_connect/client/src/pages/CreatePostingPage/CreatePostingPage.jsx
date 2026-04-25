@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   IconBell,
   IconBook,
@@ -10,6 +10,7 @@ import {
   IconPin,
   LogoCap,
 } from '../../components/opportunities/Icons.jsx'
+import { createListing } from '../../lib/api.js'
 import './CreatePostingPage.css'
 
 // big buttons for listing category (same ids as backend category enum)
@@ -39,31 +40,24 @@ const CONTACT_OPTIONS = [
   },
 ]
 
-// squashes react state into the json shape our api probably expects
+// Maps form state into the backend's current listing contract.
 function buildListingPayload(form, status) {
-  const compensation =
-    [form.compensation_amount.trim(), form.compensation_frequency.trim()]
-      .filter(Boolean)
-      .join(' ') || null
-
   return {
     title: form.title.trim(),
     description: form.description.trim(),
     category: form.category,
     contact_method: form.contact_method,
     contact_details: form.contact_details.trim(),
-    location: form.location.trim(),
-    compensation,
-    required_skills: form.required_skills,
     banner_image_url: form.banner_image_url.trim() || null,
     custom_color: form.custom_color.trim() || null,
     status,
     expiration_date: form.expiration_date.trim() || null,
-    application_settings: {
-      require_full_profile: form.require_full_profile,
-      email_notifications: form.email_notifications,
-      auto_close_applications: form.auto_close_applications,
-    },
+    skills: form.required_skills.map((name) => ({
+      name,
+      category: 'General',
+      requirementType: 'required',
+    })),
+    attachments: [],
   }
 }
 
@@ -87,6 +81,7 @@ function ToggleRow({ id, label, checked, onChange }) {
 }
 
 export default function CreatePostingPage() {
+  const navigate = useNavigate()
   // one big object is easier than a million usestates
   const [form, setForm] = useState({
     title: '',
@@ -106,6 +101,8 @@ export default function CreatePostingPage() {
     banner_image_url: '',
     custom_color: '',
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   // generic field writer so inputs dont need 20 handlers
   const setField = useCallback((key, value) => {
@@ -132,11 +129,24 @@ export default function CreatePostingPage() {
     }))
   }, [])
 
-  const handlePublish = useCallback(() => {
-    const payload = buildListingPayload(form, 'published')
-    // swap this for fetch when the backend exists
-    console.log('[Publish]', payload)
-  }, [form])
+  const handlePublish = useCallback(async () => {
+    if (!form.title.trim()) {
+      setErrorMessage('A title is required before publishing.')
+      return
+    }
+
+    setIsSubmitting(true)
+    setErrorMessage('')
+
+    try {
+      await createListing(buildListingPayload(form, 'published'))
+      navigate('/opportunities', { replace: true })
+    } catch (err) {
+      setErrorMessage(err?.message || 'Could not publish the listing.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }, [form, navigate])
 
   // teaser text in the preview card on the right
   const previewSnippet =
@@ -152,8 +162,13 @@ export default function CreatePostingPage() {
           </Link>
         </div>
         <div className="cp-topnav__right">
-          <button type="button" className="cp-btn cp-btn--primary" onClick={handlePublish}>
-            Publish
+          <button
+            type="button"
+            className="cp-btn cp-btn--primary"
+            onClick={handlePublish}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Publishing...' : 'Publish'}
           </button>
           <button type="button" className="cp-icon-btn" aria-label="Notifications">
             <IconBell />
@@ -167,6 +182,21 @@ export default function CreatePostingPage() {
       {/* left = form, right = preview + toggles */}
       <div className="cp-shell">
         <div className="cp-form-col">
+          {errorMessage ? (
+            <p
+              role="alert"
+              style={{
+                color: '#b00020',
+                background: '#fdecea',
+                border: '1px solid #f5c2c7',
+                padding: '0.75rem 1rem',
+                borderRadius: 12,
+                marginBottom: '1rem',
+              }}
+            >
+              {errorMessage}
+            </p>
+          ) : null}
           <div className="cp-field">
             <label className="cp-label" htmlFor="listing-title">
               Title
