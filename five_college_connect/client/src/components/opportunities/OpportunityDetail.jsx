@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import { createApplication } from '../../lib/api.js'
 import {
   CATEGORY_META,
   contactMethodLabel,
@@ -17,12 +19,32 @@ import {
   IconVerified,
 } from './Icons.jsx'
 
+const APPLICATION_MESSAGE_MIN_LENGTH = 1
+
 function categoryChipClass(category) {
   return CATEGORY_META[category]?.chipClass ?? 'chipTutoring'
 }
 
 // right side panel when you click a posting in the list
-export function OpportunityDetail({ posting }) {
+export function OpportunityDetail({
+  posting,
+  hasApplied = false,
+  onApplicationCreated,
+}) {
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false)
+  const [applicationMessage, setApplicationMessage] = useState('')
+  const [applicationError, setApplicationError] = useState('')
+  const [isSubmittingApplication, setIsSubmittingApplication] = useState(false)
+
+  const listingId = posting?.listing_id
+
+  useEffect(() => {
+    setIsApplyModalOpen(false)
+    setApplicationMessage('')
+    setApplicationError('')
+    setIsSubmittingApplication(false)
+  }, [listingId])
+
   if (!posting) {
     return (
       <section className="fcc-detail fcc-detail--empty">
@@ -45,6 +67,42 @@ export function OpportunityDetail({ posting }) {
     contactMethodLabel(posting.contact_method),
     posting.contact_details?.trim(),
   ].filter(Boolean)
+
+  const closeApplyModal = () => {
+    if (isSubmittingApplication) return
+    setIsApplyModalOpen(false)
+    setApplicationMessage('')
+    setApplicationError('')
+  }
+
+  const handleApplySubmit = async (event) => {
+    event.preventDefault()
+
+    const message = applicationMessage.trim()
+    if (message.length < APPLICATION_MESSAGE_MIN_LENGTH) {
+      setApplicationError('Add a short message before submitting.')
+      return
+    }
+
+    setIsSubmittingApplication(true)
+    setApplicationError('')
+
+    try {
+      const application = await createApplication({
+        listingId,
+        message,
+      })
+      onApplicationCreated?.(application)
+      setIsApplyModalOpen(false)
+      setApplicationMessage('')
+    } catch (err) {
+      setApplicationError(
+        err?.message || 'Could not submit your application right now.',
+      )
+    } finally {
+      setIsSubmittingApplication(false)
+    }
+  }
 
   return (
     <section className="fcc-detail" aria-label="Opportunity details">
@@ -203,15 +261,97 @@ export function OpportunityDetail({ posting }) {
       </div>
 
       <footer className="fcc-detail__footer">
-        <button type="button" className="fcc-btn fcc-btn--primary fcc-btn--grow">
+        <button
+          type="button"
+          className="fcc-btn fcc-btn--primary fcc-btn--grow"
+          onClick={() => {
+            setApplicationError('')
+            setIsApplyModalOpen(true)
+          }}
+          disabled={hasApplied}
+        >
           <IconSend />
-          Apply Now
+          {hasApplied ? 'Application Sent' : 'Apply Now'}
         </button>
         <button type="button" className="fcc-btn fcc-btn--outline">
           <IconMessage />
           Email
         </button>
       </footer>
+
+      {isApplyModalOpen ? (
+        <div className="fcc-modal-backdrop" role="presentation">
+          <div
+            className="fcc-application-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="application-modal-title"
+          >
+            <div className="fcc-application-modal__head">
+              <div>
+                <p className="fcc-application-modal__eyebrow">Application</p>
+                <h2
+                  id="application-modal-title"
+                  className="fcc-application-modal__title"
+                >
+                  {posting.title}
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="fcc-icon-btn"
+                aria-label="Close application form"
+                onClick={closeApplyModal}
+                disabled={isSubmittingApplication}
+              >
+                x
+              </button>
+            </div>
+
+            <form className="fcc-application-form" onSubmit={handleApplySubmit}>
+              <label className="fcc-application-form__field">
+                <span>Message to the poster</span>
+                <textarea
+                  value={applicationMessage}
+                  onChange={(event) => {
+                    setApplicationMessage(event.target.value)
+                    if (applicationError) setApplicationError('')
+                  }}
+                  placeholder="Introduce yourself and explain why you are interested."
+                  rows={7}
+                  disabled={isSubmittingApplication}
+                  autoFocus
+                />
+              </label>
+
+              {applicationError ? (
+                <p className="fcc-application-form__error">
+                  {applicationError}
+                </p>
+              ) : null}
+
+              <div className="fcc-application-form__actions">
+                <button
+                  type="button"
+                  className="fcc-btn fcc-btn--outline"
+                  onClick={closeApplyModal}
+                  disabled={isSubmittingApplication}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="fcc-btn fcc-btn--primary"
+                  disabled={isSubmittingApplication}
+                >
+                  <IconSend />
+                  {isSubmittingApplication ? 'Submitting...' : 'Submit Application'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </section>
   )
 }
