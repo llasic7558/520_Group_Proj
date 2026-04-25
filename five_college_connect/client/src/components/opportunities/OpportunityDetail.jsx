@@ -1,3 +1,8 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import ProfilePreviewModal from '../ProfilePreviewModal.jsx'
+import { createApplication, fetchProfile } from '../../lib/api.js'
+import { useAuth } from '../../context/AuthContext.js'
 import {
   CATEGORY_META,
   contactMethodLabel,
@@ -17,12 +22,42 @@ import {
   IconVerified,
 } from './Icons.jsx'
 
+const APPLICATION_MESSAGE_MIN_LENGTH = 1
+
 function categoryChipClass(category) {
   return CATEGORY_META[category]?.chipClass ?? 'chipTutoring'
 }
 
 // right side panel when you click a posting in the list
-export function OpportunityDetail({ posting }) {
+export function OpportunityDetail({
+  posting,
+  hasApplied = false,
+  onApplicationCreated,
+}) {
+  const { user: currentUser } = useAuth()
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false)
+  const [applicationMessage, setApplicationMessage] = useState('')
+  const [applicationError, setApplicationError] = useState('')
+  const [isSubmittingApplication, setIsSubmittingApplication] = useState(false)
+  const [selectedOwnerProfile, setSelectedOwnerProfile] = useState(null)
+  const [ownerProfileError, setOwnerProfileError] = useState('')
+  const [isLoadingOwnerProfile, setIsLoadingOwnerProfile] = useState(false)
+
+  const listingId = posting?.listing_id
+  const ownerUserId = posting?.created_by_user_id
+  const isOwner =
+    Boolean(currentUser?.id) && currentUser.id === ownerUserId
+
+  useEffect(() => {
+    setIsApplyModalOpen(false)
+    setApplicationMessage('')
+    setApplicationError('')
+    setIsSubmittingApplication(false)
+    setSelectedOwnerProfile(null)
+    setOwnerProfileError('')
+    setIsLoadingOwnerProfile(false)
+  }, [listingId])
+
   if (!posting) {
     return (
       <section className="fcc-detail fcc-detail--empty">
@@ -46,6 +81,58 @@ export function OpportunityDetail({ posting }) {
     posting.contact_details?.trim(),
   ].filter(Boolean)
 
+  const closeApplyModal = () => {
+    if (isSubmittingApplication) return
+    setIsApplyModalOpen(false)
+    setApplicationMessage('')
+    setApplicationError('')
+  }
+
+  const handleApplySubmit = async (event) => {
+    event.preventDefault()
+
+    const message = applicationMessage.trim()
+    if (message.length < APPLICATION_MESSAGE_MIN_LENGTH) {
+      setApplicationError('Add a short message before submitting.')
+      return
+    }
+
+    setIsSubmittingApplication(true)
+    setApplicationError('')
+
+    try {
+      const application = await createApplication({
+        listingId,
+        message,
+      })
+      onApplicationCreated?.(application)
+      setIsApplyModalOpen(false)
+      setApplicationMessage('')
+    } catch (err) {
+      setApplicationError(
+        err?.message || 'Could not submit your application right now.',
+      )
+    } finally {
+      setIsSubmittingApplication(false)
+    }
+  }
+
+  const handleOwnerProfileOpen = async () => {
+    if (!ownerUserId || isLoadingOwnerProfile) return
+
+    setOwnerProfileError('')
+    setIsLoadingOwnerProfile(true)
+
+    try {
+      const ownerProfile = await fetchProfile(ownerUserId)
+      setSelectedOwnerProfile(ownerProfile)
+    } catch (err) {
+      setOwnerProfileError(err?.message || 'Could not load this profile.')
+    } finally {
+      setIsLoadingOwnerProfile(false)
+    }
+  }
+
   return (
     <section className="fcc-detail" aria-label="Opportunity details">
       <header className="fcc-detail__header">
@@ -66,9 +153,14 @@ export function OpportunityDetail({ posting }) {
         >
           {cat.label}
         </span>
-        <p className="fcc-detail__poster">
+        <button
+          type="button"
+          className="fcc-detail__poster fcc-profile-trigger"
+          onClick={handleOwnerProfileOpen}
+          disabled={!ownerUserId || isLoadingOwnerProfile}
+        >
           {profile?.full_name} • {profile?.college}
-        </p>
+        </button>
         <div className="fcc-detail__meta">
           <span className="fcc-meta-item fcc-meta-item--lg">
             <IconPin />
@@ -182,12 +274,30 @@ export function OpportunityDetail({ posting }) {
         <section className="fcc-section">
           <h3 className="fcc-section__title">About the poster</h3>
           <div className="fcc-poster-card">
-            <div className="fcc-poster-card__avatar" aria-hidden />
+            <button
+              type="button"
+              className="fcc-poster-card__avatar fcc-poster-card__avatar--button"
+              aria-label={`View ${profile?.full_name || 'poster'} profile`}
+              onClick={handleOwnerProfileOpen}
+              disabled={!ownerUserId || isLoadingOwnerProfile}
+            />
             <div className="fcc-poster-card__info">
-              <div className="fcc-poster-card__name">{profile?.full_name}</div>
+              <button
+                type="button"
+                className="fcc-poster-card__name fcc-profile-trigger"
+                onClick={handleOwnerProfileOpen}
+                disabled={!ownerUserId || isLoadingOwnerProfile}
+              >
+                {profile?.full_name}
+              </button>
               <div className="fcc-poster-card__sub">
                 {creatorSubtitle(posting)}
               </div>
+              {ownerProfileError ? (
+                <p className="fcc-profile-trigger__error">
+                  {ownerProfileError}
+                </p>
+              ) : null}
               {user?.email_verified ? (
                 <div className="fcc-verified">
                   <IconVerified />
@@ -203,15 +313,113 @@ export function OpportunityDetail({ posting }) {
       </div>
 
       <footer className="fcc-detail__footer">
-        <button type="button" className="fcc-btn fcc-btn--primary fcc-btn--grow">
-          <IconSend />
-          Apply Now
-        </button>
+        {isOwner ? (
+          <Link
+            to={`/postings/${listingId}/applications`}
+            className="fcc-btn fcc-btn--primary fcc-btn--grow"
+          >
+            <IconMessage />
+            View Applications
+          </Link>
+        ) : (
+          <button
+            type="button"
+            className="fcc-btn fcc-btn--primary fcc-btn--grow"
+            onClick={() => {
+              setApplicationError('')
+              setIsApplyModalOpen(true)
+            }}
+            disabled={hasApplied}
+          >
+            <IconSend />
+            {hasApplied ? 'Application Sent' : 'Apply Now'}
+          </button>
+        )}
         <button type="button" className="fcc-btn fcc-btn--outline">
           <IconMessage />
           Email
         </button>
       </footer>
+
+      {isApplyModalOpen ? (
+        <div className="fcc-modal-backdrop" role="presentation">
+          <div
+            className="fcc-application-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="application-modal-title"
+          >
+            <div className="fcc-application-modal__head">
+              <div>
+                <p className="fcc-application-modal__eyebrow">Application</p>
+                <h2
+                  id="application-modal-title"
+                  className="fcc-application-modal__title"
+                >
+                  {posting.title}
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="fcc-icon-btn"
+                aria-label="Close application form"
+                onClick={closeApplyModal}
+                disabled={isSubmittingApplication}
+              >
+                x
+              </button>
+            </div>
+
+            <form className="fcc-application-form" onSubmit={handleApplySubmit}>
+              <label className="fcc-application-form__field">
+                <span>Message to the poster</span>
+                <textarea
+                  value={applicationMessage}
+                  onChange={(event) => {
+                    setApplicationMessage(event.target.value)
+                    if (applicationError) setApplicationError('')
+                  }}
+                  placeholder="Introduce yourself and explain why you are interested."
+                  rows={7}
+                  disabled={isSubmittingApplication}
+                  autoFocus
+                />
+              </label>
+
+              {applicationError ? (
+                <p className="fcc-application-form__error">
+                  {applicationError}
+                </p>
+              ) : null}
+
+              <div className="fcc-application-form__actions">
+                <button
+                  type="button"
+                  className="fcc-btn fcc-btn--outline"
+                  onClick={closeApplyModal}
+                  disabled={isSubmittingApplication}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="fcc-btn fcc-btn--primary"
+                  disabled={isSubmittingApplication}
+                >
+                  <IconSend />
+                  {isSubmittingApplication ? 'Submitting...' : 'Submit Application'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      <ProfilePreviewModal
+        profile={selectedOwnerProfile}
+        closeLabel="Back to opportunity"
+        onClose={() => setSelectedOwnerProfile(null)}
+      />
     </section>
   )
 }
