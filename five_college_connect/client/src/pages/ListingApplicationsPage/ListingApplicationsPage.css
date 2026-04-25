@@ -105,6 +105,12 @@
   font-weight: 800;
   text-transform: uppercase;
   flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+}
+
+.application-card__avatar:disabled {
+  cursor: default;
 }
 
 .application-card__identity {
@@ -114,9 +120,25 @@
 
 .application-card__name {
   margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
   color: var(--fcc-text);
+  cursor: pointer;
+  font-family: var(--fcc-font);
   font-size: 1rem;
+  font-weight: 700;
   line-height: 1.3;
+  text-align: left;
+}
+
+.application-card__name:hover:not(:disabled) {
+  color: var(--fcc-maroon);
+  text-decoration: underline;
+}
+
+.application-card__name:disabled {
+  cursor: default;
 }
 
 .application-card__subtitle {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import ProfilePreviewModal from '../../components/ProfilePreviewModal.jsx'
 import { TopNav } from '../../components/opportunities/TopNav.jsx'
 import {
   IconClock,
@@ -45,6 +46,7 @@ export default function ListingApplicationsPage() {
   const [listing, setListing] = useState(null)
   const [applications, setApplications] = useState([])
   const [profilesByUserId, setProfilesByUserId] = useState({})
+  const [selectedApplicantUserId, setSelectedApplicantUserId] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -91,11 +93,13 @@ export default function ListingApplicationsPage() {
         setListing(loadedListing)
         setApplications(loadedApplications)
         setProfilesByUserId(nextProfilesByUserId)
+        setSelectedApplicantUserId(null)
       } catch (err) {
         if (ignore) return
         setListing(null)
         setApplications([])
         setProfilesByUserId({})
+        setSelectedApplicantUserId(null)
         setErrorMessage(
           err?.message || 'Could not load applications for this listing.',
         )
@@ -117,6 +121,10 @@ export default function ListingApplicationsPage() {
     const count = applications.length
     return `${count} ${count === 1 ? 'application' : 'applications'}`
   }, [applications.length])
+
+  const selectedProfile = selectedApplicantUserId
+    ? profilesByUserId[selectedApplicantUserId]
+    : null
 
   return (
     <div className="fcc-app">
@@ -166,13 +174,32 @@ export default function ListingApplicationsPage() {
                     className="application-card"
                   >
                     <div className="application-card__top">
-                      <div className="application-card__avatar" aria-hidden>
+                      <button
+                        type="button"
+                        className="application-card__avatar"
+                        aria-label={`View ${applicantName(profile, application)} profile`}
+                        onClick={() =>
+                          setSelectedApplicantUserId(
+                            application.applicantUserId,
+                          )
+                        }
+                        disabled={!profile}
+                      >
                         {applicantName(profile, application).slice(0, 1)}
-                      </div>
+                      </button>
                       <div className="application-card__identity">
-                        <h2 className="application-card__name">
+                        <button
+                          type="button"
+                          className="application-card__name"
+                          onClick={() =>
+                            setSelectedApplicantUserId(
+                              application.applicantUserId,
+                            )
+                          }
+                          disabled={!profile}
+                        >
                           {applicantName(profile, application)}
-                        </h2>
+                        </button>
                         <p className="application-card__subtitle">
                           {applicantSubtitle(profile)}
                         </p>
@@ -208,6 +235,12 @@ export default function ListingApplicationsPage() {
           )}
         </div>
       </main>
+
+      <ProfilePreviewModal
+        profile={selectedProfile}
+        closeLabel="Back to applications"
+        onClose={() => setSelectedApplicantUserId(null)}
+      />
     </div>
   )
 }

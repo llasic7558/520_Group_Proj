@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { createApplication } from '../../lib/api.js'
+import ProfilePreviewModal from '../ProfilePreviewModal.jsx'
+import { createApplication, fetchProfile } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.js'
 import {
   CATEGORY_META,
@@ -38,16 +39,23 @@ export function OpportunityDetail({
   const [applicationMessage, setApplicationMessage] = useState('')
   const [applicationError, setApplicationError] = useState('')
   const [isSubmittingApplication, setIsSubmittingApplication] = useState(false)
+  const [selectedOwnerProfile, setSelectedOwnerProfile] = useState(null)
+  const [ownerProfileError, setOwnerProfileError] = useState('')
+  const [isLoadingOwnerProfile, setIsLoadingOwnerProfile] = useState(false)
 
   const listingId = posting?.listing_id
+  const ownerUserId = posting?.created_by_user_id
   const isOwner =
-    Boolean(currentUser?.id) && currentUser.id === posting?.created_by_user_id
+    Boolean(currentUser?.id) && currentUser.id === ownerUserId
 
   useEffect(() => {
     setIsApplyModalOpen(false)
     setApplicationMessage('')
     setApplicationError('')
     setIsSubmittingApplication(false)
+    setSelectedOwnerProfile(null)
+    setOwnerProfileError('')
+    setIsLoadingOwnerProfile(false)
   }, [listingId])
 
   if (!posting) {
@@ -109,6 +117,22 @@ export function OpportunityDetail({
     }
   }
 
+  const handleOwnerProfileOpen = async () => {
+    if (!ownerUserId || isLoadingOwnerProfile) return
+
+    setOwnerProfileError('')
+    setIsLoadingOwnerProfile(true)
+
+    try {
+      const ownerProfile = await fetchProfile(ownerUserId)
+      setSelectedOwnerProfile(ownerProfile)
+    } catch (err) {
+      setOwnerProfileError(err?.message || 'Could not load this profile.')
+    } finally {
+      setIsLoadingOwnerProfile(false)
+    }
+  }
+
   return (
     <section className="fcc-detail" aria-label="Opportunity details">
       <header className="fcc-detail__header">
@@ -129,9 +153,14 @@ export function OpportunityDetail({
         >
           {cat.label}
         </span>
-        <p className="fcc-detail__poster">
+        <button
+          type="button"
+          className="fcc-detail__poster fcc-profile-trigger"
+          onClick={handleOwnerProfileOpen}
+          disabled={!ownerUserId || isLoadingOwnerProfile}
+        >
           {profile?.full_name} • {profile?.college}
-        </p>
+        </button>
         <div className="fcc-detail__meta">
           <span className="fcc-meta-item fcc-meta-item--lg">
             <IconPin />
@@ -245,12 +274,30 @@ export function OpportunityDetail({
         <section className="fcc-section">
           <h3 className="fcc-section__title">About the poster</h3>
           <div className="fcc-poster-card">
-            <div className="fcc-poster-card__avatar" aria-hidden />
+            <button
+              type="button"
+              className="fcc-poster-card__avatar fcc-poster-card__avatar--button"
+              aria-label={`View ${profile?.full_name || 'poster'} profile`}
+              onClick={handleOwnerProfileOpen}
+              disabled={!ownerUserId || isLoadingOwnerProfile}
+            />
             <div className="fcc-poster-card__info">
-              <div className="fcc-poster-card__name">{profile?.full_name}</div>
+              <button
+                type="button"
+                className="fcc-poster-card__name fcc-profile-trigger"
+                onClick={handleOwnerProfileOpen}
+                disabled={!ownerUserId || isLoadingOwnerProfile}
+              >
+                {profile?.full_name}
+              </button>
               <div className="fcc-poster-card__sub">
                 {creatorSubtitle(posting)}
               </div>
+              {ownerProfileError ? (
+                <p className="fcc-profile-trigger__error">
+                  {ownerProfileError}
+                </p>
+              ) : null}
               {user?.email_verified ? (
                 <div className="fcc-verified">
                   <IconVerified />
@@ -367,6 +414,12 @@ export function OpportunityDetail({
           </div>
         </div>
       ) : null}
+
+      <ProfilePreviewModal
+        profile={selectedOwnerProfile}
+        closeLabel="Back to opportunity"
+        onClose={() => setSelectedOwnerProfile(null)}
+      />
     </section>
   )
 }
