@@ -3,6 +3,7 @@ import { CATEGORY_IDS, getListingId } from '../../data/postings.js'
 import { OpportunityDetail } from '../../components/opportunities/OpportunityDetail.jsx'
 import { PostingList } from '../../components/opportunities/PostingList.jsx'
 import { TopNav } from '../../components/opportunities/TopNav.jsx'
+import EmailVerificationBanner from '../../components/EmailVerificationBanner.jsx'
 import WelcomeBanner from '../../components/WelcomeBanner.jsx'
 import { fetchApplications, fetchListings } from '../../lib/api.js'
 import './OpportunitiesPage.css'
@@ -169,6 +170,7 @@ export default function OpportunitiesPage() {
         onSearchChange={(e) => setSearchValue(e.target.value)}
       />
       <WelcomeBanner />
+      <EmailVerificationBanner />
       <div className="fcc-shell">
         <PostingList
           postings={postings}
