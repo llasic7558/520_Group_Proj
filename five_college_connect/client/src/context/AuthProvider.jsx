@@ -8,6 +8,7 @@ import {
   setUser,
 } from '../lib/authStorage.js'
 import { collegeFromEmailDomain } from '../lib/colleges.js'
+import { logError, logInfo } from '../lib/logger.js'
 import { setWelcomeFlag } from '../lib/welcomeFlag.js'
 import { AuthContext } from './AuthContext.js'
 
@@ -55,25 +56,49 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(
     async (email, password) => {
-      const result = await apiRequest('/api/auth/signin', {
-        method: 'POST',
-        body: { email, password },
-      })
-      persistAuth(result.authToken, result.user)
-      return result.user
+      try {
+        const result = await apiRequest('/api/auth/signin', {
+          method: 'POST',
+          body: { email, password },
+        })
+        persistAuth(result.authToken, result.user)
+        logInfo('User signed in', {
+          userId: result.user?.id,
+          email: result.user?.email,
+        })
+        return result.user
+      } catch (error) {
+        logError('Sign-in failed', {
+          email,
+          error: error instanceof Error ? error.message : String(error),
+        })
+        throw error
+      }
     },
     [persistAuth],
   )
 
   const signup = useCallback(
     async (form) => {
-      const result = await apiRequest('/api/auth/signup', {
-        method: 'POST',
-        body: buildSignupPayload(form),
-      })
-      persistAuth(result.authToken, result.user)
-      setWelcomeFlag()
-      return result.user
+      try {
+        const result = await apiRequest('/api/auth/signup', {
+          method: 'POST',
+          body: buildSignupPayload(form),
+        })
+        persistAuth(result.authToken, result.user)
+        setWelcomeFlag()
+        logInfo('User signed up', {
+          userId: result.user?.id,
+          email: result.user?.email,
+        })
+        return result.user
+      } catch (error) {
+        logError('Sign-up failed', {
+          email: form?.email,
+          error: error instanceof Error ? error.message : String(error),
+        })
+        throw error
+      }
     },
     [persistAuth],
   )
@@ -82,6 +107,7 @@ export function AuthProvider({ children }) {
     clearAll()
     setTokenState(null)
     setUserState(null)
+    logInfo('User signed out')
   }, [])
 
   const value = useMemo(

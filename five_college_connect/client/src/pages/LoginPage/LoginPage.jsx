@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.js'
+import { logError, logInfo } from '../../lib/logger.js'
 import './LoginPage.css'
 
 export default function LoginPage() {
@@ -18,8 +19,12 @@ export default function LoginPage() {
       const email = String(formData.get('email') || '').trim()
       const password = String(formData.get('password') || '')
       await login(email, password)
+      logInfo('Login page submitted successfully', { email })
       navigate('/opportunities', { replace: true })
     } catch (err) {
+      logError('Login page submission failed', {
+        error: err instanceof Error ? err.message : String(err),
+      })
       setErrorMessage(err?.message || 'Could not sign in. Please try again.')
     } finally {
       setIsSubmitting(false)

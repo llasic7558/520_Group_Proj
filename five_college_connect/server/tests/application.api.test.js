@@ -20,6 +20,8 @@ let baseUrl;
 let applicantToken;
 let listingOwnerToken;
 let otherUserToken;
+let applicantUserId;
+let otherUserId;
 
 async function requestJson(path, { method = "GET", body, token } = {}) {
   const headers = {
@@ -56,6 +58,11 @@ async function signIn(email, password) {
   assert.equal(response.status, 200);
 
   return response.body.authToken;
+}
+
+async function getUserIdByEmail(email) {
+  const result = await query("SELECT user_id FROM users WHERE email = $1", [email]);
+  return result.rows[0]?.user_id || null;
 }
 
 async function createTestApplication(token = applicantToken, message = TEST_MESSAGE) {
@@ -115,6 +122,8 @@ test.before(async () => {
   applicantToken = await signIn(APPLICANT_EMAIL, SEEDED_PASSWORD);
   listingOwnerToken = await signIn(LISTING_OWNER_EMAIL, SEEDED_PASSWORD);
   otherUserToken = await signIn(OTHER_USER_EMAIL, SEEDED_PASSWORD);
+  applicantUserId = await getUserIdByEmail(APPLICANT_EMAIL);
+  otherUserId = await getUserIdByEmail(OTHER_USER_EMAIL);
 });
 
 test.after(async () => {
@@ -204,6 +213,16 @@ test("GET /api/applications returns application items", async () => {
   assert.equal(response.status, 200);
   assert.ok(Array.isArray(response.body.items));
   assert.ok(response.body.items.length >= 1);
+  assert.ok(response.body.items.every((item) => item.applicantUserId === applicantUserId));
+});
+
+test("GET /api/applications rejects applicant filters for a different user", async () => {
+  const response = await requestJson(`/api/applications?applicantUserId=${otherUserId}`, {
+    token: applicantToken
+  });
+
+  assert.equal(response.status, 403);
+  assert.equal(response.body.message, "You can only view your own applications");
 });
 
 test("GET /api/applications supports listing-owner views", async () => {

@@ -1,6 +1,7 @@
 // Centralized fetch wrapper. Every API call goes through apiRequest().
 
 import { clearAll, getToken } from './authStorage.js'
+import { logError, logInfo, logWarn } from './logger.js'
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:4000'
@@ -31,7 +32,12 @@ export async function apiRequest(path, { method = 'GET', body } = {}) {
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
     })
-  } catch {
+  } catch (error) {
+    logError('API request failed to reach server', {
+      method,
+      path,
+      error: error instanceof Error ? error.message : String(error),
+    })
     throw new ApiError(
       'Could not reach the server. Is it running?',
       0,
@@ -54,12 +60,39 @@ export async function apiRequest(path, { method = 'GET', body } = {}) {
     if (response.status === 401) {
       // Stale or invalid token — drop it so subsequent navigations
       // fall through ProtectedRoute back to /login.
+      logWarn('API request returned unauthorized', {
+        method,
+        path,
+        status: response.status,
+      })
       clearAll()
+    } else if (response.status >= 500) {
+      logError('API request returned server error', {
+        method,
+        path,
+        status: response.status,
+        payload,
+      })
+    } else {
+      logWarn('API request returned client error', {
+        method,
+        path,
+        status: response.status,
+        payload,
+      })
     }
     const message =
       (payload && (payload.message || payload.error)) ||
       `Request failed with status ${response.status}`
     throw new ApiError(message, response.status, payload)
+  }
+
+  if (method !== 'GET') {
+    logInfo('API request completed', {
+      method,
+      path,
+      status: response.status,
+    })
   }
 
   return payload

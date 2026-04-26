@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.js'
 import { collegeFromEmailDomain } from '../../lib/colleges.js'
+import { logError, logInfo, logWarn } from '../../lib/logger.js'
 import './SignupPage.css'
 
 const ALLOWED_DOMAINS = [
@@ -57,6 +58,7 @@ export default function SignupPage() {
     e.preventDefault()
     const domain = extractDomain(state.form.email)
     if (!ALLOWED_DOMAINS.includes(domain)) {
+      logWarn('Signup blocked due to invalid email domain', { domain })
       setState((s) => ({
         ...s,
         errorMessage:
@@ -72,12 +74,19 @@ export default function SignupPage() {
     setState((s) => ({ ...s, errorMessage: '', isSubmitting: true }))
     try {
       const createdUser = await signup(state.form)
+      logInfo('Signup wizard completed successfully', {
+        email: state.form.email,
+      })
       if (createdUser?.emailVerified) {
         navigate('/opportunities', { replace: true })
       } else {
         navigate('/verify-email', { replace: true })
       }
     } catch (err) {
+      logError('Signup wizard failed', {
+        email: state.form.email,
+        error: err instanceof Error ? err.message : String(err),
+      })
       const isAccountError =
         typeof err?.status === 'number' &&
         err.status >= 400 &&

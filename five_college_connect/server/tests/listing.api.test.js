@@ -19,6 +19,8 @@ let server;
 let baseUrl;
 let ownerToken;
 let otherUserToken;
+let ownerUserId;
+let otherUserId;
 
 async function requestJson(path, { method = "GET", body, token } = {}) {
   const headers = {
@@ -55,6 +57,11 @@ async function signIn(email, password) {
   assert.equal(response.status, 200);
 
   return response.body.authToken;
+}
+
+async function getUserIdByEmail(email) {
+  const result = await query("SELECT user_id FROM users WHERE email = $1", [email]);
+  return result.rows[0]?.user_id || null;
 }
 
 async function deleteTestListings() {
@@ -124,6 +131,8 @@ test.before(async () => {
   await deleteUserByEmail(UNVERIFIED_EMAIL);
   ownerToken = await signIn(OWNER_EMAIL, SEEDED_PASSWORD);
   otherUserToken = await signIn(OTHER_USER_EMAIL, SEEDED_PASSWORD);
+  ownerUserId = await getUserIdByEmail(OWNER_EMAIL);
+  otherUserId = await getUserIdByEmail(OTHER_USER_EMAIL);
 });
 
 test.after(async () => {
@@ -209,6 +218,29 @@ test("GET /api/listings returns listing items", async () => {
   assert.ok(response.body.items.length >= 1);
   assert.ok(response.body.items[0].creator);
   assert.ok(response.body.items[0].creator.profile);
+});
+
+test("GET /api/listings supports filtering by createdByUserId", async () => {
+  await createTestListing(`${TEST_TITLE} Owner Filter`, ownerToken);
+  await createTestListing(`${TEST_TITLE} Other Filter`, otherUserToken);
+
+  const ownerResponse = await requestJson(
+    `/api/listings?createdByUserId=${ownerUserId}&limit=10`
+  );
+  const otherResponse = await requestJson(
+    `/api/listings?createdByUserId=${otherUserId}&limit=10`
+  );
+
+  assert.equal(ownerResponse.status, 200);
+  assert.equal(otherResponse.status, 200);
+  assert.ok(ownerResponse.body.items.length >= 1);
+  assert.ok(otherResponse.body.items.length >= 1);
+  assert.ok(
+    ownerResponse.body.items.every((item) => item.createdByUserId === ownerUserId)
+  );
+  assert.ok(
+    otherResponse.body.items.every((item) => item.createdByUserId === otherUserId)
+  );
 });
 
 test("GET /api/listings/:listingId returns one listing", async () => {
