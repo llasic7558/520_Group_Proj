@@ -5,13 +5,24 @@ import { useAuth } from '../../context/AuthContext.js'
 import '../shared/simplePages.css'
 import './VerifyEmailPage.css'
 
+// Prevents double verification: React 18 Strict Mode runs effects twice in dev,
+// and some email clients prefetch links — both can consume a one-time token.
+const verifyAttemptInFlight = new Set()
+
 function useQuery() {
   const location = useLocation()
   return useMemo(() => new URLSearchParams(location.search), [location.search])
 }
 
+function isTokenAlreadyUsedError(err) {
+  return String(err?.message || '')
+    .toLowerCase()
+    .includes('already been used')
+}
+
 export default function VerifyEmailPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const query = useQuery()
   const { user, updateUser } = useAuth()
 
@@ -23,6 +34,15 @@ export default function VerifyEmailPage() {
 
   const email = user?.email || ''
 
+  function finishAsVerified(redirectMessage) {
+    if (user) {
+      updateUser({ ...user, emailVerified: true })
+    }
+    setStatus('verified')
+    setMessage(redirectMessage)
+    setTimeout(() => navigate('/opportunities', { replace: true }), 800)
+  }
+
   async function submitVerification(nextToken) {
     const trimmed = (nextToken ?? token).trim()
     if (!trimmed) {
@@ -30,6 +50,11 @@ export default function VerifyEmailPage() {
       setMessage('Enter the verification token from your email.')
       return
     }
+
+    if (verifyAttemptInFlight.has(trimmed)) {
+      return
+    }
+    verifyAttemptInFlight.add(trimmed)
 
     setStatus('verifying')
     setMessage('')
@@ -42,6 +67,11 @@ export default function VerifyEmailPage() {
       setMessage('Email verified. Redirecting…')
       setTimeout(() => navigate('/opportunities', { replace: true }), 800)
     } catch (err) {
+      if (isTokenAlreadyUsedError(err)) {
+        finishAsVerified('Your email is already verified. Redirecting…')
+        return
+      }
+      verifyAttemptInFlight.delete(trimmed)
       setStatus('error')
       setMessage(err?.message || 'Could not verify email. Try resending a link.')
     }
@@ -66,11 +96,14 @@ export default function VerifyEmailPage() {
   }
 
   useEffect(() => {
-    const urlToken = query.get('token')
+    const urlToken = query.get('token')?.trim()
     if (urlToken && urlToken !== token) setToken(urlToken)
-    if (urlToken) submitVerification(urlToken)
+    if (urlToken) {
+      void submitVerification(urlToken)
+    }
+    // Only re-run when the link query changes (not on every token keystroke).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query])
+  }, [location.search])
 
   return (
     <div className="simple-page">
