@@ -48,6 +48,11 @@ export function AuthProvider({ children }) {
     setUserState(nextUser)
   }, [])
 
+  const updateUser = useCallback((nextUser) => {
+    setUser(nextUser)
+    setUserState(nextUser)
+  }, [])
+
   const login = useCallback(
     async (email, password) => {
       const result = await apiRequest('/api/auth/signin', {
@@ -86,9 +91,10 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(token),
       login,
       signup,
+      updateUser,
       logout,
     }),
-    [user, token, login, signup, logout],
+    [user, token, login, signup, updateUser, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
