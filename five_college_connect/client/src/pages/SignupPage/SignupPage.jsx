@@ -71,8 +71,12 @@ export default function SignupPage() {
     e.preventDefault()
     setState((s) => ({ ...s, errorMessage: '', isSubmitting: true }))
     try {
-      await signup(state.form)
-      navigate('/opportunities', { replace: true })
+      const createdUser = await signup(state.form)
+      if (createdUser?.emailVerified) {
+        navigate('/opportunities', { replace: true })
+      } else {
+        navigate('/verify-email', { replace: true })
+      }
     } catch (err) {
       const isAccountError =
         typeof err?.status === 'number' &&
