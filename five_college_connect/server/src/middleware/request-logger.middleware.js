@@ -1,4 +1,9 @@
+import { logInfo } from "../utils/logger.js";
+
 export function requestLogger(req, _res, next) {
-  console.log(`${req.method} ${req.originalUrl}`);
+  logInfo("Incoming request", {
+    method: req.method,
+    path: req.originalUrl
+  });
   next();
 }

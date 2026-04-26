@@ -14,6 +14,13 @@ export const dbConfig = {
 // and repositories call these helpers.
 export const pool = new Pool(dbConfig);
 
+async function applyCompatibilityMigrations() {
+  await query(`
+    ALTER TABLE users
+    DROP CONSTRAINT IF EXISTS users_username_key
+  `);
+}
+
 export async function query(text, params = []) {
   return pool.query(text, params);
 }
@@ -35,6 +42,7 @@ export async function withTransaction(callback) {
 }
 
 export async function testDatabaseConnection() {
+  await applyCompatibilityMigrations();
   const result = await query("SELECT NOW() AS connected_at");
   return result.rows[0];
 }

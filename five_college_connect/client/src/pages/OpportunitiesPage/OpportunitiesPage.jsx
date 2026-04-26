@@ -5,6 +5,7 @@ import { PostingList } from '../../components/opportunities/PostingList.jsx'
 import { TopNav } from '../../components/opportunities/TopNav.jsx'
 import WelcomeBanner from '../../components/WelcomeBanner.jsx'
 import { fetchApplications, fetchListings } from '../../lib/api.js'
+import { logError, logInfo } from '../../lib/logger.js'
 import './OpportunitiesPage.css'
 
 function normalizeListing(listing) {
@@ -89,9 +90,21 @@ export default function OpportunitiesPage() {
         })
 
         if (ignore) return
+        logInfo('Opportunities loaded', {
+          category:
+            activeFilter === CATEGORY_IDS.ALL ? 'all' : activeFilter,
+          query: deferredQuery,
+          count: items.length,
+        })
         setPostings(items.map(normalizeListing))
       } catch (err) {
         if (ignore) return
+        logError('Opportunities failed to load', {
+          category:
+            activeFilter === CATEGORY_IDS.ALL ? 'all' : activeFilter,
+          query: deferredQuery,
+          error: err instanceof Error ? err.message : String(err),
+        })
         setPostings([])
         setErrorMessage(
           err?.message || 'Could not load opportunities right now.',
