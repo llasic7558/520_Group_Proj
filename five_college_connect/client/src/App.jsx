@@ -3,6 +3,7 @@ import ProtectedRoute from './components/ProtectedRoute.jsx'
 import { AuthProvider } from './context/AuthProvider.jsx'
 import CreatePostingPage from './pages/CreatePostingPage/CreatePostingPage.jsx'
 import LandingPage from './pages/LandingPage/LandingPage.jsx'
+import ListingApplicationsPage from './pages/ListingApplicationsPage/ListingApplicationsPage.jsx'
 import LoginPage from './pages/LoginPage/LoginPage.jsx'
 import OpportunitiesPage from './pages/OpportunitiesPage/OpportunitiesPage.jsx'
 import ProfilePage from './pages/ProfilePage/ProfilePage.jsx'
@@ -37,6 +38,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <CreatePostingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/postings/:listingId/applications"
+          element={
+            <ProtectedRoute>
+              <ListingApplicationsPage />
             </ProtectedRoute>
           }
         />

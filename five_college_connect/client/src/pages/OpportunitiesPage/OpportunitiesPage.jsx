@@ -4,7 +4,7 @@ import { OpportunityDetail } from '../../components/opportunities/OpportunityDet
 import { PostingList } from '../../components/opportunities/PostingList.jsx'
 import { TopNav } from '../../components/opportunities/TopNav.jsx'
 import WelcomeBanner from '../../components/WelcomeBanner.jsx'
-import { fetchListings } from '../../lib/api.js'
+import { fetchApplications, fetchListings } from '../../lib/api.js'
 import { logError, logInfo } from '../../lib/logger.js'
 import './OpportunitiesPage.css'
 
@@ -70,6 +70,7 @@ export default function OpportunitiesPage() {
   const [selectedId, setSelectedId] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+  const [appliedListingIds, setAppliedListingIds] = useState(() => new Set())
 
   const deferredQuery = useDeferredValue(searchValue.trim())
 
@@ -122,6 +123,46 @@ export default function OpportunitiesPage() {
     }
   }, [activeFilter, deferredQuery])
 
+  useEffect(() => {
+    let ignore = false
+
+    async function loadApplications() {
+      try {
+        const applications = await fetchApplications({ limit: 50 })
+
+        if (ignore) return
+        setAppliedListingIds(
+          new Set(
+            applications
+              .map((application) => application.listingId)
+              .filter(Boolean),
+          ),
+        )
+      } catch {
+        if (!ignore) {
+          setAppliedListingIds(new Set())
+        }
+      }
+    }
+
+    loadApplications()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  const handleApplicationCreated = (application) => {
+    const appliedListingId = application?.listingId
+    if (!appliedListingId) return
+
+    setAppliedListingIds((current) => {
+      const next = new Set(current)
+      next.add(appliedListingId)
+      return next
+    })
+  }
+
   const resolvedSelectedId = useMemo(() => {
     if (postings.length === 0) return null
     if (selectedId && postings.some((p) => getListingId(p) === selectedId)) {
@@ -166,7 +207,11 @@ export default function OpportunitiesPage() {
               <p>No opportunities matched your current filters.</p>
             </section>
           ) : (
-            <OpportunityDetail posting={selectedPosting} />
+            <OpportunityDetail
+              posting={selectedPosting}
+              hasApplied={appliedListingIds.has(selectedPosting.listing_id)}
+              onApplicationCreated={handleApplicationCreated}
+            />
           )}
         </main>
       </div>

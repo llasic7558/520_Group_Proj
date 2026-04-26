@@ -139,6 +139,14 @@ export async function fetchApplications(filters = {}) {
   return payload?.items ?? []
 }
 
+export async function createApplication(body) {
+  const payload = await apiRequest('/api/applications', {
+    method: 'POST',
+    body,
+  })
+  return payload?.application ?? null
+}
+
 export async function fetchProfile(userId) {
   const payload = await apiRequest(`/api/profiles/${userId}`)
   return payload?.profile ?? null
