@@ -27,11 +27,16 @@ describe('SignupPage', () => {
     const signup = vi.fn().mockResolvedValue({
       id: 'user-1',
       email: 'newuser@umass.edu',
+      emailVerified: false,
     })
 
     renderWithProviders(
       <Routes>
         <Route path="/signup" element={<SignupPage />} />
+        <Route
+          path="/verify-email"
+          element={<div>Check your email to verify</div>}
+        />
         <Route
           path="/opportunities"
           element={<div>Signed up successfully</div>}
@@ -69,7 +74,7 @@ describe('SignupPage', () => {
     )
 
     expect(
-      await screen.findByText('Signed up successfully'),
+      await screen.findByText('Check your email to verify'),
     ).toBeInTheDocument()
   })
 })
