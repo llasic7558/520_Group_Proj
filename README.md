@@ -150,6 +150,9 @@ If you need a true-$0 hosted version of this project, the current best-fit stack
 - **Server:** Vercel Hobby Express deploy
 - **Database:** Neon Free Postgres
 
+Current public web app:
+- https://520-group-proj-744s-frontend.vercel.app
+
 Why this stack:
 
 - Fly.io is no longer a true free option for new accounts.
