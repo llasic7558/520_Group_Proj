@@ -3,8 +3,9 @@
 import { clearAll, getToken } from './authStorage.js'
 import { logError, logInfo, logWarn } from './logger.js'
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const API_BASE_URL = normalizeBaseUrl(
+  import.meta.env.VITE_API_URL || 'http://localhost:4000',
+)
 
 export class ApiError extends Error {
   constructor(message, status, body) {
@@ -27,7 +28,7 @@ export async function apiRequest(path, { method = 'GET', body } = {}) {
 
   let response
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(buildApiUrl(path), {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -96,6 +97,15 @@ export async function apiRequest(path, { method = 'GET', body } = {}) {
   }
 
   return payload
+}
+
+function normalizeBaseUrl(value) {
+  return value.replace(/\/+$/, '')
+}
+
+function buildApiUrl(path) {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  return `${API_BASE_URL}${normalizedPath}`
 }
 
 function buildQueryString(params) {

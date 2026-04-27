@@ -47,6 +47,36 @@ export async function testDatabaseConnection() {
   return result.rows[0];
 }
 
+export async function getDbHealth() {
+  const baseStatus = {
+    configured: Boolean(env.databaseUrl),
+    sslEnabled: env.dbSsl
+  };
+
+  if (!baseStatus.configured) {
+    return {
+      ...baseStatus,
+      status: "misconfigured"
+    };
+  }
+
+  const startedAt = Date.now();
+
+  try {
+    await query("SELECT 1");
+    return {
+      ...baseStatus,
+      status: "ok",
+      latencyMs: Date.now() - startedAt
+    };
+  } catch {
+    return {
+      ...baseStatus,
+      status: "unavailable"
+    };
+  }
+}
+
 export function getDbStatus() {
   return {
     configured: Boolean(env.databaseUrl),
