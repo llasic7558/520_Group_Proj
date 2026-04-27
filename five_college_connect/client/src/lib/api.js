@@ -159,3 +159,7 @@ export async function updateProfile(userId, body) {
   })
   return payload?.profile ?? null
 }
+
+export async function resendVerificationEmail() {
+  return apiRequest('/api/auth/verify-email/resend', { method: 'POST' })
+}

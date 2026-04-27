@@ -73,11 +73,15 @@ export default function SignupPage() {
     e.preventDefault()
     setState((s) => ({ ...s, errorMessage: '', isSubmitting: true }))
     try {
-      await signup(state.form)
+      const createdUser = await signup(state.form)
       logInfo('Signup wizard completed successfully', {
         email: state.form.email,
       })
-      navigate('/opportunities', { replace: true })
+      if (createdUser?.emailVerified) {
+        navigate('/opportunities', { replace: true })
+      } else {
+        navigate('/verify-email', { replace: true })
+      }
     } catch (err) {
       logError('Signup wizard failed', {
         email: state.form.email,
