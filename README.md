@@ -19,7 +19,7 @@ The primary users of the platform are students within the Five College community
 | Frontend | React, JavaScript | Component-based UI; shared language with the backend. |
 | Backend | Express.js, Node.js | API in `five_college_connect/server`. |
 | Database | PostgreSQL | Structured data, joins, and referential integrity for profiles and related entities. |
-| Ops | Docker Compose, AWS (target) | Containers orchestrate Postgres + server + client locally; AWS for hosted production(in the future). |
+| Ops | Docker Compose, Vercel, Neon | Docker Compose for local dev; Vercel + Neon for a true-$0 public pilot at low traffic. |
 
 The frontend app is a **Vite + React** project under **`five_college_connect/client`** using **JavaScript** (`.jsx`). The backend is an **Express 5 + PostgreSQL** service under **`five_college_connect/server`** (Node 20+).
 
@@ -139,6 +139,59 @@ cd five_college_connect/client
 npm run build
 npm run preview   # optional: serve the built files locally
 ```
+
+---
+
+#### Free public deployment
+
+If you need a true-$0 hosted version of this project, the current best-fit stack for this repo is:
+
+- **Client:** Vercel static Vite deploy
+- **Server:** Vercel Hobby Express deploy
+- **Database:** Neon Free Postgres
+
+Why this stack:
+
+- Fly.io is no longer a true free option for new accounts.
+- Vercel's official Express support lets the existing backend run as a single function without rewriting the app.
+- Neon still offers a free Postgres tier with no credit card required.
+
+**One-time production database setup**
+```bash
+cd Project
+psql "postgresql://USERNAME:PASSWORD@YOUR-NEON-POOLER-HOST/neondb?sslmode=require&channel_binding=require" -f five_college_connect/server/database/schema.sql
+```
+
+Do **not** run `seed.sql` against production.
+
+**Deploy the backend**
+- Import this repository into Vercel as a new project
+- Set the root directory to `five_college_connect/server`
+- Add the environment variables shown in [server/.env.production.example](./five_college_connect/server/.env.production.example)
+
+Vercel documents Express support directly, including monorepo root-directory deployment and Hobby-plan limits:
+- Express on Vercel: https://vercel.com/docs/frameworks/backend/express
+- Vercel monorepos: https://vercel.com/docs/monorepos
+- Vercel Hobby plan: https://vercel.com/docs/plans/hobby
+
+**Deploy the frontend**
+- Import the same repository into Vercel as a second project
+- Set the root directory to `five_college_connect/client`
+- Set `VITE_API_URL` using [client/.env.production.example](./five_college_connect/client/.env.production.example) as the template
+
+Vercel's Vite deployment guide is here:
+- https://vercel.com/docs/frameworks/frontend/vite
+
+**After the frontend URL exists**
+- Set the backend `CLIENT_URL` to your frontend production URL
+- Set `EMAIL_VERIFICATION_BASE_URL` to `https://<your-frontend-domain>/verify-email`
+- Redeploy the backend
+
+Expected shape:
+
+- frontend: `https://<client>.vercel.app`
+- backend: `https://<api>.vercel.app`
+- database: Neon pooled connection string with `DB_SSL=true`
 
 ---
 

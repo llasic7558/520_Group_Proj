@@ -97,6 +97,14 @@ psql "$DATABASE_URL" -f database/migrations/2026-04-14-drop-username-unique.sql
 npm run dev
 ```
 
+## Production config
+
+Do not repurpose your local `.env` for production.
+
+- Keep `.env` pointed at your local Postgres or Docker Postgres instance for development.
+- Put production values in your hosting provider's environment-variable settings instead. For the current free deployment path, that means the Vercel project settings for `DATABASE_URL`, `DB_SSL`, `AUTH_TOKEN_SECRET`, `CLIENT_URL`, and related mail settings.
+- Use [.env.production.example](./.env.production.example) as the reference shape for production values. It is a template only and should not contain live credentials.
+
 ## Email verification
 
 The server can send real verification emails through Mailjet.
