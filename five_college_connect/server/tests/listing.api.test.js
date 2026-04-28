@@ -327,7 +327,7 @@ test("PUT /api/listings/:listingId rejects updates from a different user", async
   assert.equal(response.status, 403);
 });
 
-test("DELETE /api/listings/:listingId removes the listing", async () => {
+test("DELETE /api/listings/:listingId closes the listing without removing it", async () => {
   const createdResponse = await createTestListing(TEST_TITLE_DELETE);
   const listingId = createdResponse.body.listing.listingId;
 
@@ -337,9 +337,17 @@ test("DELETE /api/listings/:listingId removes the listing", async () => {
   });
 
   assert.equal(deleteResponse.status, 200);
-  assert.equal(deleteResponse.body.message, "Listing deleted successfully");
+  assert.equal(deleteResponse.body.message, "Listing closed successfully");
+  assert.equal(deleteResponse.body.listing.status, "closed");
 
   const getResponse = await requestJson(`/api/listings/${listingId}`);
-  assert.equal(getResponse.status, 404);
-  assert.equal(getResponse.body.message, "Listing not found");
+  assert.equal(getResponse.status, 200);
+  assert.equal(getResponse.body.listing.listingId, listingId);
+  assert.equal(getResponse.body.listing.status, "closed");
+
+  const openListingsResponse = await requestJson("/api/listings?status=open&limit=50");
+  assert.equal(openListingsResponse.status, 200);
+  assert.ok(
+    openListingsResponse.body.items.every((item) => item.listingId !== listingId)
+  );
 });

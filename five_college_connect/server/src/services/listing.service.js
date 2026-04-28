@@ -82,11 +82,13 @@ export class ListingService {
 
     ensureOwnerOrAdmin(currentUser, existingListing.createdByUserId, "listing");
 
-    const deleted = await this.listingRepository.deleteListing(listingId);
+    const closedListing = await this.listingRepository.deleteListing(listingId);
 
-    if (!deleted) {
+    if (!closedListing) {
       throw createHttpError(404, "Listing not found");
     }
+
+    return this.buildListingDetails(closedListing);
   }
 
   async buildListingDetails(

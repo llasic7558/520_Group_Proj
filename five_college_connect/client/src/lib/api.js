@@ -142,6 +142,13 @@ export async function fetchListing(listingId) {
   return payload?.listing ?? null
 }
 
+export async function closeListing(listingId) {
+  const payload = await apiRequest(`/api/listings/${listingId}`, {
+    method: 'DELETE',
+  })
+  return payload?.listing ?? null
+}
+
 export async function fetchApplications(filters = {}) {
   const payload = await apiRequest(
     `/api/applications${buildQueryString(filters)}`,

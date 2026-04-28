@@ -122,7 +122,11 @@ export class ListingRepository {
           ) OR (
             $3 = FALSE AND title ILIKE '%' || $2 || '%'
           ))
-          AND ($4 = '' OR status = $4)
+          AND (
+            $4 = ''
+            OR status = $4
+            OR ($4 = 'open' AND status = 'published')
+          )
           AND ($5 = '' OR created_by_user_id = $5::uuid)
         ORDER BY created_at DESC
         LIMIT $6
@@ -198,13 +202,29 @@ export class ListingRepository {
   async deleteListing(listingId, executor = { query }) {
     const result = await executor.query(
       `
-        DELETE FROM listings
+        UPDATE listings
+        SET
+          status = 'closed',
+          updated_at = NOW()
         WHERE listing_id = $1
-        RETURNING listing_id
+        RETURNING
+          listing_id,
+          created_by_user_id,
+          title,
+          description,
+          category,
+          contact_method,
+          contact_details,
+          banner_image_url,
+          custom_color,
+          status,
+          expiration_date,
+          created_at,
+          updated_at
       `,
       [listingId]
     );
 
-    return result.rowCount > 0;
+    return result.rows[0] ? new Listing(result.rows[0]) : null;
   }
 }
