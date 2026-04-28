@@ -227,4 +227,46 @@ export class ListingRepository {
 
     return result.rows[0] ? new Listing(result.rows[0]) : null;
   }
+
+  async updateListingStatus(listingId, status, executor = { query }) {
+    const result = await executor.query(
+      `
+        UPDATE listings
+        SET
+          status = $2,
+          updated_at = NOW()
+        WHERE listing_id = $1
+        RETURNING
+          listing_id,
+          created_by_user_id,
+          title,
+          description,
+          category,
+          contact_method,
+          contact_details,
+          banner_image_url,
+          custom_color,
+          status,
+          expiration_date,
+          created_at,
+          updated_at
+      `,
+      [listingId, status]
+    );
+
+    return result.rows[0] ? new Listing(result.rows[0]) : null;
+  }
+
+  async permanentlyDeleteListing(listingId, executor = { query }) {
+    const result = await executor.query(
+      `
+        DELETE FROM listings
+        WHERE listing_id = $1
+        RETURNING listing_id
+      `,
+      [listingId]
+    );
+
+    return result.rowCount > 0;
+  }
 }

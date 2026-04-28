@@ -8,6 +8,8 @@ const TEST_TITLE = "API Test Listing";
 const TEST_TITLE_GET = "API Test Listing Get";
 const TEST_TITLE_UPDATE = "API Test Listing Update";
 const TEST_TITLE_DELETE = "API Test Listing Delete";
+const TEST_TITLE_PERMANENT_DELETE = "API Test Listing Permanent Delete";
+const TEST_APPLICATION_MESSAGE = "API Test Listing Permanent Delete Application";
 const SEEDED_PASSWORD = "DemoPass123!";
 const OWNER_EMAIL = "emily.rodriguez@umass.edu";
 const OTHER_USER_EMAIL = "michael.chen@umass.edu";
@@ -350,4 +352,68 @@ test("DELETE /api/listings/:listingId closes the listing without removing it", a
   assert.ok(
     openListingsResponse.body.items.every((item) => item.listingId !== listingId)
   );
+});
+
+test("POST /api/listings/:listingId/reopen reopens a closed listing", async () => {
+  const createdResponse = await createTestListing(`${TEST_TITLE_DELETE} Reopen`);
+  const listingId = createdResponse.body.listing.listingId;
+
+  const closeResponse = await requestJson(`/api/listings/${listingId}`, {
+    method: "DELETE",
+    token: ownerToken
+  });
+
+  assert.equal(closeResponse.status, 200);
+  assert.equal(closeResponse.body.listing.status, "closed");
+
+  const reopenResponse = await requestJson(`/api/listings/${listingId}/reopen`, {
+    method: "POST",
+    token: ownerToken
+  });
+
+  assert.equal(reopenResponse.status, 200);
+  assert.equal(reopenResponse.body.message, "Listing reopened successfully");
+  assert.equal(reopenResponse.body.listing.status, "open");
+
+  const getResponse = await requestJson(`/api/listings/${listingId}`);
+  assert.equal(getResponse.status, 200);
+  assert.equal(getResponse.body.listing.status, "open");
+});
+
+test("DELETE /api/listings/:listingId/permanent removes the listing and its applications", async () => {
+  const createdResponse = await createTestListing(TEST_TITLE_PERMANENT_DELETE);
+  const listingId = createdResponse.body.listing.listingId;
+
+  const applicationResponse = await requestJson("/api/applications", {
+    method: "POST",
+    token: otherUserToken,
+    body: {
+      listingId,
+      message: TEST_APPLICATION_MESSAGE
+    }
+  });
+
+  assert.equal(applicationResponse.status, 201);
+
+  const applicationId = applicationResponse.body.application.applicationId;
+  const deleteResponse = await requestJson(`/api/listings/${listingId}/permanent`, {
+    method: "DELETE",
+    token: ownerToken
+  });
+
+  assert.equal(deleteResponse.status, 200);
+  assert.equal(
+    deleteResponse.body.message,
+    "Listing permanently deleted successfully"
+  );
+
+  const getResponse = await requestJson(`/api/listings/${listingId}`);
+  assert.equal(getResponse.status, 404);
+
+  const applicationResult = await query(
+    "SELECT application_id FROM applications WHERE application_id = $1",
+    [applicationId]
+  );
+
+  assert.equal(applicationResult.rowCount, 0);
 });

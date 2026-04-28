@@ -284,6 +284,44 @@ test("PUT /api/applications/:applicationId rejects updates from a different user
   assert.equal(response.status, 403);
 });
 
+test("PATCH /api/applications/:applicationId/status lets the listing owner accept an application", async () => {
+  const created = await createTestApplication();
+
+  const response = await requestJson(
+    `/api/applications/${created.body.application.applicationId}/status`,
+    {
+      method: "PATCH",
+      token: listingOwnerToken,
+      body: {
+        status: "accepted"
+      }
+    }
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.message, "Application status updated successfully");
+  assert.equal(response.body.application.status, "accepted");
+  assert.equal(response.body.application.message, TEST_MESSAGE);
+});
+
+test("PATCH /api/applications/:applicationId/status rejects users who do not own the listing", async () => {
+  const created = await createTestApplication();
+
+  const response = await requestJson(
+    `/api/applications/${created.body.application.applicationId}/status`,
+    {
+      method: "PATCH",
+      token: otherUserToken,
+      body: {
+        status: "rejected"
+      }
+    }
+  );
+
+  assert.equal(response.status, 403);
+  assert.equal(response.body.message, "You can only manage applications for your own listings");
+});
+
 test("DELETE /api/applications/:applicationId removes an application", async () => {
   const created = await createTestApplication();
 

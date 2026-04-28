@@ -91,6 +91,43 @@ export class ListingService {
     return this.buildListingDetails(closedListing);
   }
 
+  async reopenListing(listingId, currentUser) {
+    const existingListing = await this.listingRepository.findById(listingId);
+
+    if (!existingListing) {
+      throw createHttpError(404, "Listing not found");
+    }
+
+    ensureOwnerOrAdmin(currentUser, existingListing.createdByUserId, "listing");
+
+    const reopenedListing = await this.listingRepository.updateListingStatus(
+      listingId,
+      "open"
+    );
+
+    if (!reopenedListing) {
+      throw createHttpError(404, "Listing not found");
+    }
+
+    return this.buildListingDetails(reopenedListing);
+  }
+
+  async permanentlyDeleteListing(listingId, currentUser) {
+    const existingListing = await this.listingRepository.findById(listingId);
+
+    if (!existingListing) {
+      throw createHttpError(404, "Listing not found");
+    }
+
+    ensureOwnerOrAdmin(currentUser, existingListing.createdByUserId, "listing");
+
+    const deleted = await this.listingRepository.permanentlyDeleteListing(listingId);
+
+    if (!deleted) {
+      throw createHttpError(404, "Listing not found");
+    }
+  }
+
   async buildListingDetails(
     listing,
     payload = null,

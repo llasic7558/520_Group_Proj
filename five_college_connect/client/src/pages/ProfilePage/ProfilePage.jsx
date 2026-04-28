@@ -7,6 +7,8 @@ import {
   fetchListing,
   fetchListings,
   fetchProfile,
+  permanentlyDeleteListing,
+  reopenListing,
   updateProfile,
 } from '../../lib/api.js'
 import { TopNav } from '../../components/opportunities/TopNav.jsx'
@@ -267,7 +269,11 @@ export default function ProfilePage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [listingActionError, setListingActionError] = useState('')
   const [closingListingId, setClosingListingId] = useState(null)
+  const [reopeningListingId, setReopeningListingId] = useState(null)
   const [listingToClose, setListingToClose] = useState(null)
+  const [openListingMenuId, setOpenListingMenuId] = useState(null)
+  const [listingToDelete, setListingToDelete] = useState(null)
+  const [deletingListingId, setDeletingListingId] = useState(null)
 
   useEffect(() => {
     let ignore = false
@@ -454,12 +460,85 @@ export default function ProfilePage() {
         current.filter((listing) => listing.project_id !== listingToClose.listingId),
       )
       setListingToClose(null)
+      setOpenListingMenuId(null)
     } catch (err) {
       setListingActionError(
         err?.message || 'Could not close this listing right now.',
       )
     } finally {
       setClosingListingId(null)
+    }
+  }
+
+  async function handleReopenListing(listing) {
+    if (!listing?.listingId) return
+
+    setReopeningListingId(listing.listingId)
+    setListingActionError('')
+
+    try {
+      const reopened = await reopenListing(listing.listingId)
+      const reopenedStatus = String(reopened?.status || 'open').toLowerCase()
+
+      setOwnedListings((current) =>
+        current.map((currentListing) =>
+          currentListing.listingId === listing.listingId
+            ? { ...currentListing, status: reopenedStatus }
+            : currentListing,
+        ),
+      )
+      if (listing.category === 'project') {
+        setProjectListings((current) => {
+          if (current.some((project) => project.project_id === listing.listingId)) {
+            return current
+          }
+
+          return [
+            {
+              project_id: listing.listingId,
+              title: listing.title,
+              description: listing.description,
+              tags: [],
+            },
+            ...current,
+          ]
+        })
+      }
+      setOpenListingMenuId(null)
+    } catch (err) {
+      setListingActionError(
+        err?.message || 'Could not reopen this listing right now.',
+      )
+    } finally {
+      setReopeningListingId(null)
+    }
+  }
+
+  async function confirmPermanentDeleteListing() {
+    if (!listingToDelete?.listingId) return
+
+    setDeletingListingId(listingToDelete.listingId)
+    setListingActionError('')
+
+    try {
+      await permanentlyDeleteListing(listingToDelete.listingId)
+      setOwnedListings((current) =>
+        current.filter((listing) => listing.listingId !== listingToDelete.listingId),
+      )
+      setProjectListings((current) =>
+        current.filter((listing) => listing.project_id !== listingToDelete.listingId),
+      )
+      setRecentActivity((current) =>
+        current.filter((activity) => activity.id !== `listing-${listingToDelete.listingId}`),
+      )
+      setListingToDelete(null)
+      setOpenListingMenuId(null)
+    } catch (err) {
+      setListingActionError(
+        err?.message || 'Could not permanently delete this listing right now.',
+      )
+    } finally {
+      setDeletingListingId(null)
     }
   }
 
@@ -749,7 +828,7 @@ export default function ProfilePage() {
             )}
           </section>
 
-          <section className="prof-section">
+          <section className="prof-section" id="my-listings">
             <div className="prof-section__head">
               <h2 className="prof-section__title">Skills &amp; Expertise</h2>
               {isEditing ? (
@@ -1071,22 +1150,71 @@ export default function ProfilePage() {
                 ownedListings.map((listing) => {
                   const isOpen = listing.status === 'open'
                   const isClosing = closingListingId === listing.listingId
+                  const isReopening = reopeningListingId === listing.listingId
+                  const isDeleting = deletingListingId === listing.listingId
 
                   return (
                     <article key={listing.listingId} className="prof-listing-card">
+                      <div className="prof-listing-card__menu">
+                        <button
+                          type="button"
+                          className="prof-listing-card__menu-button"
+                          aria-label={`Open actions for ${listing.title}`}
+                          aria-expanded={openListingMenuId === listing.listingId}
+                          onClick={() =>
+                            setOpenListingMenuId((current) =>
+                              current === listing.listingId ? null : listing.listingId,
+                            )
+                          }
+                        >
+                          <span />
+                          <span />
+                          <span />
+                        </button>
+                        {openListingMenuId === listing.listingId ? (
+                          <div className="prof-listing-card__menu-popover">
+                            {isOpen ? (
+                              <button
+                                type="button"
+                                className="prof-listing-card__menu-item"
+                                onClick={() => {
+                                  setListingActionError('')
+                                  setListingToClose(listing)
+                                  setOpenListingMenuId(null)
+                                }}
+                                disabled={isClosing}
+                              >
+                                {isClosing ? 'Closing...' : 'Close listing'}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="prof-listing-card__menu-item"
+                                onClick={() => handleReopenListing(listing)}
+                                disabled={isReopening}
+                              >
+                                {isReopening ? 'Reopening...' : 'Reopen listing'}
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="prof-listing-card__menu-item prof-listing-card__menu-item--danger"
+                              onClick={() => {
+                                setListingActionError('')
+                                setListingToDelete(listing)
+                                setOpenListingMenuId(null)
+                              }}
+                              disabled={isDeleting}
+                            >
+                              {isDeleting ? 'Deleting...' : 'Delete listing'}
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
                       <div className="prof-listing-card__main">
                         <div className="prof-listing-card__topline">
                           <span className="prof-listing-card__category">
                             {listing.category.replace('_', ' ')}
-                          </span>
-                          <span
-                            className={
-                              isOpen
-                                ? 'prof-listing-card__status prof-listing-card__status--open'
-                                : 'prof-listing-card__status prof-listing-card__status--closed'
-                            }
-                          >
-                            {listing.status}
                           </span>
                         </div>
                         <h3 className="prof-listing-card__title">
@@ -1103,26 +1231,24 @@ export default function ProfilePage() {
                         <Link
                           className="prof-btn prof-btn--outline"
                           to={`/postings/${listing.listingId}/applications`}
+                          state={{
+                            returnTo: {
+                              path: '/profile#my-listings',
+                              label: 'Back to profile',
+                            },
+                          }}
                         >
                           View Applications
                         </Link>
-                        {isOpen ? (
-                          <button
-                            type="button"
-                            className="prof-btn prof-btn--danger"
-                            onClick={() => {
-                              setListingActionError('')
-                              setListingToClose(listing)
-                            }}
-                            disabled={isClosing}
-                          >
-                            {isClosing ? 'Closing...' : 'Close Listing'}
-                          </button>
-                        ) : (
-                          <span className="prof-listing-card__closed-note">
-                            Closed
-                          </span>
-                        )}
+                        <span
+                          className={
+                            isOpen
+                              ? 'prof-listing-card__status prof-listing-card__status--open'
+                              : 'prof-listing-card__status prof-listing-card__status--closed'
+                          }
+                        >
+                          {listing.status}
+                        </span>
                       </div>
                     </article>
                   )
@@ -1288,6 +1414,47 @@ export default function ProfilePage() {
                 disabled={Boolean(closingListingId)}
               >
                 {closingListingId ? 'Closing...' : 'Confirm Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {listingToDelete ? (
+        <div className="fcc-modal-backdrop" role="presentation">
+          <div
+            className="fcc-confirm-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-delete-listing-title"
+          >
+            <p className="fcc-application-modal__eyebrow">Delete listing</p>
+            <h2
+              id="profile-delete-listing-title"
+              className="fcc-confirm-modal__title"
+            >
+              Permanently delete this listing?
+            </h2>
+            <p className="fcc-confirm-modal__body">
+              This cannot be undone. {listingToDelete.title} and its
+              applications will be permanently deleted.
+            </p>
+            <div className="fcc-confirm-modal__actions">
+              <button
+                type="button"
+                className="fcc-btn fcc-btn--outline"
+                onClick={() => setListingToDelete(null)}
+                disabled={Boolean(deletingListingId)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="fcc-btn fcc-btn--danger"
+                onClick={confirmPermanentDeleteListing}
+                disabled={Boolean(deletingListingId)}
+              >
+                {deletingListingId ? 'Deleting...' : 'Delete Permanently'}
               </button>
             </div>
           </div>

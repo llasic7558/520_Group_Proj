@@ -111,6 +111,34 @@ export class ApplicationService {
     return application;
   }
 
+  async updateApplicationStatus(applicationId, status, currentUser) {
+    const existingApplication = await this.applicationRepository.findById(applicationId);
+
+    if (!existingApplication) {
+      throw createHttpError(404, "Application not found");
+    }
+
+    const listing = await this.listingRepository.findById(existingApplication.listingId);
+
+    if (
+      !isAdmin(currentUser) &&
+      (!listing || listing.createdByUserId !== currentUser.userId)
+    ) {
+      throw createHttpError(403, "You can only manage applications for your own listings");
+    }
+
+    const application = await this.applicationRepository.updateApplicationStatus(
+      applicationId,
+      status
+    );
+
+    if (!application) {
+      throw createHttpError(404, "Application not found");
+    }
+
+    return application;
+  }
+
   async deleteApplication(applicationId, currentUser) {
     const existingApplication = await this.applicationRepository.findById(applicationId);
 

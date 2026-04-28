@@ -343,6 +343,12 @@ export function OpportunityDetail({
           <>
             <Link
               to={`/postings/${listingId}/applications`}
+              state={{
+                returnTo: {
+                  path: '/opportunities',
+                  label: 'Back to opportunities',
+                },
+              }}
               className="fcc-btn fcc-btn--primary fcc-btn--grow"
             >
               <IconMessage />

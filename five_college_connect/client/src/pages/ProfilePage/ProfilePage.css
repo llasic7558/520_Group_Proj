@@ -405,10 +405,11 @@
 }
 
 .prof-listing-card {
+  position: relative;
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px;
+  padding: 16px 52px 16px 16px;
   border-radius: 12px;
   border: 1px solid var(--fcc-border);
   background: var(--fcc-bg);
@@ -427,8 +428,7 @@
 }
 
 .prof-listing-card__category,
-.prof-listing-card__status,
-.prof-listing-card__closed-note {
+.prof-listing-card__status {
   display: inline-flex;
   align-items: center;
   width: fit-content;
@@ -449,8 +449,7 @@
   color: #15803d;
 }
 
-.prof-listing-card__status--closed,
-.prof-listing-card__closed-note {
+.prof-listing-card__status--closed {
   background: #f1f1f1;
   color: #666;
 }
@@ -487,6 +486,79 @@
 .prof-listing-card__actions .prof-btn {
   text-decoration: none;
   text-align: center;
+}
+
+.prof-listing-card__menu {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+}
+
+.prof-listing-card__menu-button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--fcc-border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--fcc-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+}
+
+.prof-listing-card__menu-button:hover {
+  border-color: var(--fcc-maroon);
+  color: var(--fcc-maroon);
+}
+
+.prof-listing-card__menu-button span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.prof-listing-card__menu-popover {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  width: 170px;
+  padding: 6px;
+  border: 1px solid var(--fcc-border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 14px 40px rgba(26, 26, 26, 0.16);
+}
+
+.prof-listing-card__menu-item {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fcc-text);
+  cursor: pointer;
+  font-family: var(--fcc-font);
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.prof-listing-card__menu-item:hover:not(:disabled) {
+  background: rgba(128, 48, 48, 0.08);
+  color: var(--fcc-maroon);
+}
+
+.prof-listing-card__menu-item--danger {
+  color: #9f1d1d;
+}
+
+.prof-listing-card__menu-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .prof-tag {
@@ -724,6 +796,7 @@
 @media (max-width: 560px) {
   .prof-listing-card {
     flex-direction: column;
+    padding-right: 52px;
   }
 
   .prof-listing-card__actions {
