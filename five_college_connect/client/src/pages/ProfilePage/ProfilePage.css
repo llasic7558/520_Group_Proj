@@ -144,6 +144,16 @@
   color: var(--fcc-maroon);
 }
 
+.prof-btn--danger {
+  background: #fff1f1;
+  color: #9f1d1d;
+  border-color: #c94a4a;
+}
+
+.prof-btn--danger:hover:not(:disabled) {
+  background: #ffe2e2;
+}
+
 .prof-icon-round {
   width: 40px;
   height: 40px;
@@ -381,6 +391,104 @@
   gap: 6px;
 }
 
+.prof-listings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prof-listings__error {
+  margin: 0 0 12px;
+  color: #9f1d1d;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.prof-listing-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--fcc-border);
+  background: var(--fcc-bg);
+}
+
+.prof-listing-card__main {
+  min-width: 0;
+}
+
+.prof-listing-card__topline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.prof-listing-card__category,
+.prof-listing-card__status,
+.prof-listing-card__closed-note {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.prof-listing-card__category {
+  background: rgba(128, 48, 48, 0.1);
+  color: var(--fcc-maroon);
+}
+
+.prof-listing-card__status--open {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
+.prof-listing-card__status--closed,
+.prof-listing-card__closed-note {
+  background: #f1f1f1;
+  color: #666;
+}
+
+.prof-listing-card__title {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--fcc-text);
+}
+
+.prof-listing-card__desc {
+  margin: 0;
+  color: var(--fcc-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.prof-listing-card__meta {
+  margin: 10px 0 0;
+  color: var(--fcc-muted);
+  font-size: 0.78rem;
+}
+
+.prof-listing-card__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.prof-listing-card__actions .prof-btn {
+  text-decoration: none;
+  text-align: center;
+}
+
 .prof-tag {
   font-size: 0.72rem;
   padding: 4px 10px;
@@ -614,6 +722,14 @@
 }
 
 @media (max-width: 560px) {
+  .prof-listing-card {
+    flex-direction: column;
+  }
+
+  .prof-listing-card__actions {
+    align-items: stretch;
+  }
+
   .prof-edit-fields {
     grid-template-columns: 1fr;
   }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.js'
 import {
+  closeListing,
   fetchApplications,
   fetchListing,
   fetchListings,
@@ -184,6 +185,19 @@ function normalizeProjectListings(items) {
   }))
 }
 
+function normalizeOwnedListings(items) {
+  if (!Array.isArray(items)) return []
+
+  return items.map((listing) => ({
+    listingId: listing.listingId,
+    title: listing.title || 'Untitled listing',
+    description: listing.description || 'No description provided.',
+    category: String(listing.category || 'opportunity').toLowerCase(),
+    status: String(listing.status || 'open').toLowerCase(),
+    createdAt: listing.createdAt,
+  }))
+}
+
 function formatRelativeTime(iso) {
   if (!iso) return 'Recently'
 
@@ -243,6 +257,7 @@ function buildRecentActivity({ listings, applications, listingTitles }) {
 export default function ProfilePage() {
   const { user } = useAuth()
   const [profile, setProfile] = useState(null)
+  const [ownedListings, setOwnedListings] = useState([])
   const [projectListings, setProjectListings] = useState([])
   const [recentActivity, setRecentActivity] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -250,6 +265,9 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
   const [draft, setDraft] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
+  const [listingActionError, setListingActionError] = useState('')
+  const [closingListingId, setClosingListingId] = useState(null)
+  const [listingToClose, setListingToClose] = useState(null)
 
   useEffect(() => {
     let ignore = false
@@ -307,6 +325,7 @@ export default function ProfilePage() {
             ? applicationsResult.value
             : []
 
+        setOwnedListings(normalizeOwnedListings(ownedListings))
         setProjectListings(
           normalizeProjectListings(
             ownedListings.filter(
@@ -351,6 +370,7 @@ export default function ProfilePage() {
         })
 
         if (listingsResult.status !== 'fulfilled') {
+          setOwnedListings([])
           setProjectListings([])
         }
 
@@ -411,6 +431,36 @@ export default function ProfilePage() {
     })
     setErrorMessage('')
     setIsEditing(true)
+  }
+
+  async function confirmCloseListing() {
+    if (!listingToClose?.listingId) return
+
+    setClosingListingId(listingToClose.listingId)
+    setListingActionError('')
+
+    try {
+      const closed = await closeListing(listingToClose.listingId)
+      const closedStatus = String(closed?.status || 'closed').toLowerCase()
+
+      setOwnedListings((current) =>
+        current.map((listing) =>
+          listing.listingId === listingToClose.listingId
+            ? { ...listing, status: closedStatus }
+            : listing,
+        ),
+      )
+      setProjectListings((current) =>
+        current.filter((listing) => listing.project_id !== listingToClose.listingId),
+      )
+      setListingToClose(null)
+    } catch (err) {
+      setListingActionError(
+        err?.message || 'Could not close this listing right now.',
+      )
+    } finally {
+      setClosingListingId(null)
+    }
   }
 
   function cancelEdit() {
@@ -997,6 +1047,89 @@ export default function ProfilePage() {
               )}
             </div>
           </section>
+
+          <section className="prof-section">
+            <div className="prof-section__head">
+              <h2 className="prof-section__title">My Listings</h2>
+              <Link className="prof-text-link" to="/postings/new">
+                Create Listing
+              </Link>
+            </div>
+            {listingActionError ? (
+              <p className="prof-listings__error" role="alert">
+                {listingActionError}
+              </p>
+            ) : null}
+            <div className="prof-listings">
+              {isLoading ? (
+                <p className="prof-section__body">Loading listings...</p>
+              ) : ownedListings.length === 0 ? (
+                <p className="prof-section__body">
+                  You have not created any listings yet.
+                </p>
+              ) : (
+                ownedListings.map((listing) => {
+                  const isOpen = listing.status === 'open'
+                  const isClosing = closingListingId === listing.listingId
+
+                  return (
+                    <article key={listing.listingId} className="prof-listing-card">
+                      <div className="prof-listing-card__main">
+                        <div className="prof-listing-card__topline">
+                          <span className="prof-listing-card__category">
+                            {listing.category.replace('_', ' ')}
+                          </span>
+                          <span
+                            className={
+                              isOpen
+                                ? 'prof-listing-card__status prof-listing-card__status--open'
+                                : 'prof-listing-card__status prof-listing-card__status--closed'
+                            }
+                          >
+                            {listing.status}
+                          </span>
+                        </div>
+                        <h3 className="prof-listing-card__title">
+                          {listing.title}
+                        </h3>
+                        <p className="prof-listing-card__desc">
+                          {listing.description}
+                        </p>
+                        <p className="prof-listing-card__meta">
+                          Created {formatRelativeTime(listing.createdAt)}
+                        </p>
+                      </div>
+                      <div className="prof-listing-card__actions">
+                        <Link
+                          className="prof-btn prof-btn--outline"
+                          to={`/postings/${listing.listingId}/applications`}
+                        >
+                          View Applications
+                        </Link>
+                        {isOpen ? (
+                          <button
+                            type="button"
+                            className="prof-btn prof-btn--danger"
+                            onClick={() => {
+                              setListingActionError('')
+                              setListingToClose(listing)
+                            }}
+                            disabled={isClosing}
+                          >
+                            {isClosing ? 'Closing...' : 'Close Listing'}
+                          </button>
+                        ) : (
+                          <span className="prof-listing-card__closed-note">
+                            Closed
+                          </span>
+                        )}
+                      </div>
+                    </article>
+                  )
+                })
+              )}
+            </div>
+          </section>
         </div>
 
         <aside className="prof-aside">
@@ -1119,6 +1252,47 @@ export default function ProfilePage() {
           </section>
         </aside>
       </div>
+
+      {listingToClose ? (
+        <div className="fcc-modal-backdrop" role="presentation">
+          <div
+            className="fcc-confirm-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-close-listing-title"
+          >
+            <p className="fcc-application-modal__eyebrow">Close listing</p>
+            <h2
+              id="profile-close-listing-title"
+              className="fcc-confirm-modal__title"
+            >
+              Take this listing down?
+            </h2>
+            <p className="fcc-confirm-modal__body">
+              {listingToClose.title} will no longer appear in the opportunities
+              feed, but applications and history will be kept.
+            </p>
+            <div className="fcc-confirm-modal__actions">
+              <button
+                type="button"
+                className="fcc-btn fcc-btn--outline"
+                onClick={() => setListingToClose(null)}
+                disabled={Boolean(closingListingId)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="fcc-btn fcc-btn--danger"
+                onClick={confirmCloseListing}
+                disabled={Boolean(closingListingId)}
+              >
+                {closingListingId ? 'Closing...' : 'Confirm Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
