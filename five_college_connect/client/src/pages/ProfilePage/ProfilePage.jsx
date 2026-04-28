@@ -859,7 +859,7 @@ export default function ProfilePage() {
             )}
           </section>
 
-          <section className="prof-section" id="my-listings">
+          <section className="prof-section">
             <div className="prof-section__head">
               <h2 className="prof-section__title">Skills &amp; Expertise</h2>
               {isEditing ? (
@@ -1158,7 +1158,7 @@ export default function ProfilePage() {
             </div>
           </section>
 
-          <section className="prof-section">
+          <section className="prof-section" id="my-applications">
             <div className="prof-section__head">
               <h2 className="prof-section__title">My Applications</h2>
               <Link className="prof-text-link" to="/opportunities">
