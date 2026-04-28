@@ -200,6 +200,25 @@ function normalizeOwnedListings(items) {
   }))
 }
 
+function normalizeAppliedApplications(items, listingsById) {
+  if (!Array.isArray(items)) return []
+
+  return items.map((application) => {
+    const listing = listingsById.get(application.listingId)
+
+    return {
+      applicationId: application.applicationId,
+      listingId: application.listingId,
+      title: listing?.title || 'Listing unavailable',
+      category: String(listing?.category || 'opportunity').toLowerCase(),
+      listingStatus: String(listing?.status || '').toLowerCase(),
+      applicationStatus: String(application.status || 'pending').toLowerCase(),
+      message: application.message || '',
+      submittedAt: application.submittedAt,
+    }
+  })
+}
+
 function formatRelativeTime(iso) {
   if (!iso) return 'Recently'
 
@@ -260,6 +279,7 @@ export default function ProfilePage() {
   const { user } = useAuth()
   const [profile, setProfile] = useState(null)
   const [ownedListings, setOwnedListings] = useState([])
+  const [appliedApplications, setAppliedApplications] = useState([])
   const [projectListings, setProjectListings] = useState([])
   const [recentActivity, setRecentActivity] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -342,6 +362,7 @@ export default function ProfilePage() {
         )
 
         const listingTitles = new Map()
+        const listingsById = new Map()
         const applicationListingIds = [
           ...new Set(
             ownApplications
@@ -356,12 +377,18 @@ export default function ProfilePage() {
           )
 
           listingLookups.forEach((result, index) => {
-            if (result.status === 'fulfilled' && result.value?.title) {
-              listingTitles.set(applicationListingIds[index], result.value.title)
+            if (result.status === 'fulfilled' && result.value) {
+              listingsById.set(applicationListingIds[index], result.value)
+              if (result.value.title) {
+                listingTitles.set(applicationListingIds[index], result.value.title)
+              }
             }
           })
         }
 
+        setAppliedApplications(
+          normalizeAppliedApplications(ownApplications, listingsById),
+        )
         setRecentActivity(
           buildRecentActivity({
             listings: ownedListings,
@@ -378,6 +405,10 @@ export default function ProfilePage() {
         if (listingsResult.status !== 'fulfilled') {
           setOwnedListings([])
           setProjectListings([])
+        }
+
+        if (applicationsResult.status !== 'fulfilled') {
+          setAppliedApplications([])
         }
 
         if (
@@ -1128,6 +1159,62 @@ export default function ProfilePage() {
           </section>
 
           <section className="prof-section">
+            <div className="prof-section__head">
+              <h2 className="prof-section__title">My Applications</h2>
+              <Link className="prof-text-link" to="/opportunities">
+                Find Opportunities
+              </Link>
+            </div>
+            <div className="prof-applications">
+              {isLoading ? (
+                <p className="prof-section__body">Loading applications...</p>
+              ) : appliedApplications.length === 0 ? (
+                <p className="prof-section__body">
+                  You have not applied to any listings yet.
+                </p>
+              ) : (
+                appliedApplications.map((application) => (
+                  <article
+                    key={application.applicationId}
+                    className="prof-application-card"
+                  >
+                    <div className="prof-application-card__main">
+                      <div className="prof-listing-card__topline">
+                        <span className="prof-listing-card__category">
+                          {application.category.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <h3 className="prof-listing-card__title">
+                        {application.title}
+                      </h3>
+                      {application.message ? (
+                        <p className="prof-listing-card__desc">
+                          {application.message}
+                        </p>
+                      ) : null}
+                      <p className="prof-listing-card__meta">
+                        Applied {formatRelativeTime(application.submittedAt)}
+                      </p>
+                    </div>
+                    <div className="prof-application-card__side">
+                      <span
+                        className={`prof-application-card__status prof-application-card__status--${application.applicationStatus}`}
+                      >
+                        {application.applicationStatus}
+                      </span>
+                      {application.listingStatus ? (
+                        <span className="prof-application-card__listing-status">
+                          Listing {application.listingStatus}
+                        </span>
+                      ) : null}
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </section>
+
+          <section className="prof-section" id="my-listings">
             <div className="prof-section__head">
               <h2 className="prof-section__title">My Listings</h2>
               <Link className="prof-text-link" to="/postings/new">

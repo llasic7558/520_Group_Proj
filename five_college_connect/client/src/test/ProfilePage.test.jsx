@@ -82,6 +82,8 @@ describe('ProfilePage', () => {
             listing: {
               listingId: 'listing-99',
               title: 'Research Assistant',
+              category: 'job',
+              status: 'open',
             },
           })
         }
@@ -103,6 +105,9 @@ describe('ProfilePage', () => {
 
     expect(await screen.findByText('Project Showcase')).toBeInTheDocument()
     expect(screen.getByText('A real project posting.')).toBeInTheDocument()
+    expect(screen.getByText('My Applications')).toBeInTheDocument()
+    expect(screen.getByText('Research Assistant')).toBeInTheDocument()
+    expect(screen.getByText('pending')).toBeInTheDocument()
     expect(screen.getByText('Applied to Research Assistant')).toBeInTheDocument()
     expect(
       screen.getByText('Created a project posting: Project Showcase'),
