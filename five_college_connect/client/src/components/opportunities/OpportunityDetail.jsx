@@ -45,6 +45,7 @@ export function OpportunityDetail({
   const [isLoadingOwnerProfile, setIsLoadingOwnerProfile] = useState(false)
   const [closeListingError, setCloseListingError] = useState('')
   const [isClosingListing, setIsClosingListing] = useState(false)
+  const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false)
 
   const listingId = posting?.listing_id
   const ownerUserId = posting?.created_by_user_id
@@ -61,6 +62,7 @@ export function OpportunityDetail({
     setIsLoadingOwnerProfile(false)
     setCloseListingError('')
     setIsClosingListing(false)
+    setIsCloseConfirmOpen(false)
   }, [listingId])
 
   if (!posting) {
@@ -141,16 +143,12 @@ export function OpportunityDetail({
   const handleCloseListing = async () => {
     if (!listingId || isClosingListing) return
 
-    const confirmed = window.confirm(
-      'Close this listing? It will be hidden from the opportunities feed, but applications and history will be kept.',
-    )
-    if (!confirmed) return
-
     setIsClosingListing(true)
     setCloseListingError('')
 
     try {
       await closeListing(listingId)
+      setIsCloseConfirmOpen(false)
       onListingClosed?.(listingId)
     } catch (err) {
       setCloseListingError(
@@ -353,7 +351,10 @@ export function OpportunityDetail({
             <button
               type="button"
               className="fcc-btn fcc-btn--danger"
-              onClick={handleCloseListing}
+              onClick={() => {
+                setCloseListingError('')
+                setIsCloseConfirmOpen(true)
+              }}
               disabled={isClosingListing}
             >
               {isClosingListing ? 'Closing...' : 'Close Listing'}
@@ -383,6 +384,44 @@ export function OpportunityDetail({
         <p className="fcc-action-error" role="alert">
           {closeListingError}
         </p>
+      ) : null}
+
+      {isCloseConfirmOpen ? (
+        <div className="fcc-modal-backdrop" role="presentation">
+          <div
+            className="fcc-confirm-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="close-listing-title"
+          >
+            <p className="fcc-application-modal__eyebrow">Close listing</p>
+            <h2 id="close-listing-title" className="fcc-confirm-modal__title">
+              Take this listing down?
+            </h2>
+            <p className="fcc-confirm-modal__body">
+              The listing will no longer appear in the opportunities feed, but
+              applications and history will be kept.
+            </p>
+            <div className="fcc-confirm-modal__actions">
+              <button
+                type="button"
+                className="fcc-btn fcc-btn--outline"
+                onClick={() => setIsCloseConfirmOpen(false)}
+                disabled={isClosingListing}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="fcc-btn fcc-btn--danger"
+                onClick={handleCloseListing}
+                disabled={isClosingListing}
+              >
+                {isClosingListing ? 'Closing...' : 'Confirm Close'}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {isApplyModalOpen ? (
