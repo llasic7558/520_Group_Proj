@@ -58,7 +58,6 @@ jobs:
         run: npm run test:load:frontend
 
       - name: Run authenticated API smoke
-        if: ${{ secrets.PRODUCTION_TEST_EMAIL != '' && secrets.PRODUCTION_TEST_PASSWORD != '' }}
         env:
           K6_BASE_URL: ${{ vars.PRODUCTION_API_URL }}
           K6_SIGNIN_EMAILS: ${{ secrets.PRODUCTION_TEST_EMAIL }}
@@ -68,4 +67,5 @@ jobs:
           K6_DURATION: "15s"
           K6_P95_MS: "2500"
           K6_FAILED_RATE: "0.05"
+        if: ${{ env.K6_SIGNIN_EMAILS != '' && env.K6_SIGNIN_PASSWORD != '' }}
         run: npm run test:load:auth
