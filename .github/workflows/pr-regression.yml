@@ -1,7 +1,6 @@
 name: PR Regression
 
 on:
-  pull_request:
   workflow_dispatch:
 
 concurrency:
@@ -40,6 +39,9 @@ jobs:
 
       - name: Install backend dependencies
         run: npm ci
+
+      - name: Create backend env file for CI
+        run: cp .env.example .env
 
       - name: Load schema, migrations, and seed data
         env:

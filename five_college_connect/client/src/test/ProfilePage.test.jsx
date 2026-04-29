@@ -101,8 +101,18 @@ describe('ProfilePage', () => {
       }),
     })
 
-    expect(await screen.findByText('Project Showcase')).toBeInTheDocument()
-    expect(screen.getByText('A real project posting.')).toBeInTheDocument()
+    const featuredProjectsHeading = await screen.findByRole('heading', {
+      name: 'Featured Projects',
+    })
+    const featuredProjectsSection = featuredProjectsHeading.closest('section')
+
+    expect(featuredProjectsSection).not.toBeNull()
+    expect(
+      within(featuredProjectsSection).getByText('Project Showcase'),
+    ).toBeInTheDocument()
+    expect(
+      within(featuredProjectsSection).getByText('A real project posting.'),
+    ).toBeInTheDocument()
     expect(screen.getByText('Applied to Research Assistant')).toBeInTheDocument()
     expect(
       screen.getByText('Created a project posting: Project Showcase'),
