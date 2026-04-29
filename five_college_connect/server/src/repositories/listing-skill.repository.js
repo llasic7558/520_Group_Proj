@@ -43,6 +43,48 @@ export class ListingSkillRepository {
     }));
   }
 
+  async findByListingIds(listingIds, executor = { query }) {
+    if (!Array.isArray(listingIds) || listingIds.length === 0) {
+      return new Map();
+    }
+
+    const result = await executor.query(
+      `
+        SELECT
+          ls.listing_skill_id,
+          ls.listing_id,
+          ls.skill_id,
+          ls.requirement_type,
+          s.name,
+          s.category
+        FROM listing_skills ls
+        JOIN skills s ON s.skill_id = ls.skill_id
+        WHERE ls.listing_id = ANY($1::uuid[])
+        ORDER BY ls.listing_id ASC, s.name ASC
+      `,
+      [listingIds]
+    );
+
+    const skillsByListingId = new Map();
+
+    for (const row of result.rows) {
+      const skills = skillsByListingId.get(row.listing_id) || [];
+
+      skills.push({
+        listingSkillId: row.listing_skill_id,
+        listingId: row.listing_id,
+        skillId: row.skill_id,
+        name: row.name,
+        category: row.category,
+        requirementType: row.requirement_type
+      });
+
+      skillsByListingId.set(row.listing_id, skills);
+    }
+
+    return skillsByListingId;
+  }
+
   async deleteByListingId(listingId, executor = { query }) {
     await executor.query("DELETE FROM listing_skills WHERE listing_id = $1", [listingId]);
   }

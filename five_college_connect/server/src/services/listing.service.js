@@ -33,19 +33,21 @@ export class ListingService {
     });
   }
 
-  async listListings(filters = {}) {
+  async listListings(filters = {}, executor = undefined) {
     const normalizedCategory = filters.category?.trim() || "";
     const normalizedQuery = filters.query?.trim() || "";
-    const listings = await this.listingRepository.listListings({
-      ...filters,
-      category: normalizedCategory.toLowerCase() === "all" ? "" : normalizedCategory,
-      query: normalizedQuery,
-      isListingIdSearch: UUID_PATTERN.test(normalizedQuery)
-    });
-
-    return Promise.all(
-      listings.map((listing) => this.buildListingDetails(listing))
+    const safeExecutor = executor ?? { query: undefined };
+    const listings = await this.listingRepository.listListings(
+      {
+        ...filters,
+        category: normalizedCategory.toLowerCase() === "all" ? "" : normalizedCategory,
+        query: normalizedQuery,
+        isListingIdSearch: UUID_PATTERN.test(normalizedQuery)
+      },
+      safeExecutor.query ? safeExecutor : undefined
     );
+
+    return this.buildListingCollectionDetails(listings, safeExecutor.query ? safeExecutor : undefined);
   }
 
   async getListingById(listingId) {
@@ -137,23 +139,41 @@ export class ListingService {
       }
     }
 
-    const [skills, attachments, creator, creatorProfile] = await Promise.all([
-      this.listingSkillRepository.findByListingId(listing.listingId, executor),
-      this.listingAttachmentRepository.findByListingId(listing.listingId, executor),
-      this.userRepository.findById(listing.createdByUserId, executor),
-      this.profileRepository.findByUserId(listing.createdByUserId, executor)
-    ]);
+    const [listingWithDetails] = await this.buildListingCollectionDetails([listing], executor);
+    return listingWithDetails;
+  }
 
-    return {
-      ...listing,
-      skills,
-      attachments,
-      creator: creator
-        ? {
-            ...creator,
-            profile: creatorProfile
-          }
-        : null
-    };
+  async buildListingCollectionDetails(listings, executor = undefined) {
+    if (!Array.isArray(listings) || listings.length === 0) {
+      return [];
+    }
+
+    const listingIds = listings.map((listing) => listing.listingId);
+    const creatorIds = [...new Set(listings.map((listing) => listing.createdByUserId))];
+
+    const skillsByListingId = await this.listingSkillRepository.findByListingIds(listingIds, executor);
+    const attachmentsByListingId = await this.listingAttachmentRepository.findByListingIds(
+      listingIds,
+      executor
+    );
+    const creatorsByUserId = await this.userRepository.findByIds(creatorIds, executor);
+    const profilesByUserId = await this.profileRepository.findByUserIds(creatorIds, executor);
+
+    return listings.map((listing) => {
+      const creator = creatorsByUserId.get(listing.createdByUserId) || null;
+      const creatorProfile = profilesByUserId.get(listing.createdByUserId) || null;
+
+      return {
+        ...listing,
+        skills: skillsByListingId.get(listing.listingId) || [],
+        attachments: attachmentsByListingId.get(listing.listingId) || [],
+        creator: creator
+          ? {
+              ...creator,
+              profile: creatorProfile
+            }
+          : null
+      };
+    });
   }
 }
