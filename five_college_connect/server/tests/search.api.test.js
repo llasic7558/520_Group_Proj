@@ -203,3 +203,17 @@ test("GET /api/listings supports exact listing ID search", async () => {
   assert.equal(response.body.items[0].listingId, created.listingId);
   assert.equal(response.body.items[0].title, "API Search UUID Target");
 });
+
+test("GET /api/search/listings returns the same filtered results as listing browse search", async () => {
+  const response = await requestJson("/api/search/listings?category=Tutoring&query=calculus&limit=10");
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.items.length, 2);
+  assert.ok(response.body.items.every((item) => item.category === "Tutoring"));
+  assert.ok(
+    response.body.items.some((item) => item.title === SEARCH_TITLE_MIXED)
+  );
+  assert.ok(
+    response.body.items.some((item) => item.title === SEARCH_TITLE_SECOND)
+  );
+});
