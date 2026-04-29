@@ -10,7 +10,11 @@
     "db:up": "docker compose up -d --wait postgres",
     "db:down": "docker compose stop postgres",
     "db:reset": "docker compose down -v && docker compose up -d --wait postgres",
-    "install:all": "npm install && npm --prefix five_college_connect/server install && npm --prefix five_college_connect/client install"
+    "install:all": "npm install && npm --prefix five_college_connect/server install && npm --prefix five_college_connect/client install",
+    "test:server": "npm --prefix five_college_connect/server test",
+    "test:client": "npm --prefix five_college_connect/client test",
+    "test:client:build": "npm --prefix five_college_connect/client run build",
+    "test:regression": "npm run test:server && npm run test:client && npm run test:client:build"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"
