@@ -87,6 +87,7 @@ export default function OpportunitiesPage() {
           category:
             activeFilter === CATEGORY_IDS.ALL ? undefined : activeFilter,
           query: deferredQuery,
+          status: 'open',
           limit: 20,
         })
 
@@ -164,6 +165,15 @@ export default function OpportunitiesPage() {
     })
   }
 
+  const handleListingClosed = (listingId) => {
+    setPostings((current) =>
+      current.filter((posting) => getListingId(posting) !== listingId),
+    )
+    setSelectedId((currentSelectedId) =>
+      currentSelectedId === listingId ? null : currentSelectedId,
+    )
+  }
+
   const resolvedSelectedId = useMemo(() => {
     if (postings.length === 0) return null
     if (selectedId && postings.some((p) => getListingId(p) === selectedId)) {
@@ -213,6 +223,7 @@ export default function OpportunitiesPage() {
               posting={selectedPosting}
               hasApplied={appliedListingIds.has(selectedPosting.listing_id)}
               onApplicationCreated={handleApplicationCreated}
+              onListingClosed={handleListingClosed}
             />
           )}
         </main>

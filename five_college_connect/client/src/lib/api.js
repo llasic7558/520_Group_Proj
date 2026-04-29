@@ -142,6 +142,26 @@ export async function fetchListing(listingId) {
   return payload?.listing ?? null
 }
 
+export async function closeListing(listingId) {
+  const payload = await apiRequest(`/api/listings/${listingId}`, {
+    method: 'DELETE',
+  })
+  return payload?.listing ?? null
+}
+
+export async function reopenListing(listingId) {
+  const payload = await apiRequest(`/api/listings/${listingId}/reopen`, {
+    method: 'POST',
+  })
+  return payload?.listing ?? null
+}
+
+export async function permanentlyDeleteListing(listingId) {
+  return apiRequest(`/api/listings/${listingId}/permanent`, {
+    method: 'DELETE',
+  })
+}
+
 export async function fetchApplications(filters = {}) {
   const payload = await apiRequest(
     `/api/applications${buildQueryString(filters)}`,
@@ -153,6 +173,14 @@ export async function createApplication(body) {
   const payload = await apiRequest('/api/applications', {
     method: 'POST',
     body,
+  })
+  return payload?.application ?? null
+}
+
+export async function updateApplicationStatus(applicationId, status) {
+  const payload = await apiRequest(`/api/applications/${applicationId}/status`, {
+    method: 'PATCH',
+    body: { status },
   })
   return payload?.application ?? null
 }

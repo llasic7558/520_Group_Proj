@@ -67,7 +67,7 @@ describe('CreatePostingPage', () => {
         description: 'Create a project planning app for the Five Colleges.',
         category: 'project',
         contact_method: 'profile',
-        status: 'published',
+        status: 'open',
         skills: [
           {
             name: 'React',

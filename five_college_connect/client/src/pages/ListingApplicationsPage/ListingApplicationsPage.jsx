@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ProfilePreviewModal from '../../components/ProfilePreviewModal.jsx'
 import { TopNav } from '../../components/opportunities/TopNav.jsx'
 import {
@@ -8,7 +8,12 @@ import {
   IconVerified,
 } from '../../components/opportunities/Icons.jsx'
 import { useAuth } from '../../context/AuthContext.js'
-import { fetchApplications, fetchListing, fetchProfile } from '../../lib/api.js'
+import {
+  fetchApplications,
+  fetchListing,
+  fetchProfile,
+  updateApplicationStatus,
+} from '../../lib/api.js'
 import '../OpportunitiesPage/OpportunitiesPage.css'
 import './ListingApplicationsPage.css'
 
@@ -42,6 +47,8 @@ function applicantSubtitle(profile) {
 
 export default function ListingApplicationsPage() {
   const { listingId } = useParams()
+  const location = useLocation()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [listing, setListing] = useState(null)
   const [applications, setApplications] = useState([])
@@ -49,6 +56,8 @@ export default function ListingApplicationsPage() {
   const [selectedApplicantUserId, setSelectedApplicantUserId] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+  const [statusErrorMessage, setStatusErrorMessage] = useState('')
+  const [updatingApplicationId, setUpdatingApplicationId] = useState(null)
 
   useEffect(() => {
     let ignore = false
@@ -94,6 +103,7 @@ export default function ListingApplicationsPage() {
         setApplications(loadedApplications)
         setProfilesByUserId(nextProfilesByUserId)
         setSelectedApplicantUserId(null)
+        setStatusErrorMessage('')
       } catch (err) {
         if (ignore) return
         setListing(null)
@@ -125,6 +135,46 @@ export default function ListingApplicationsPage() {
   const selectedProfile = selectedApplicantUserId
     ? profilesByUserId[selectedApplicantUserId]
     : null
+  const returnTarget =
+    location.state?.returnTo &&
+    typeof location.state.returnTo.path === 'string' &&
+    typeof location.state.returnTo.label === 'string'
+      ? location.state.returnTo
+      : {
+          path: '/opportunities',
+          label: 'Back to opportunities',
+        }
+
+  function handleBack() {
+    if (location.state?.returnTo && window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+
+    navigate(returnTarget.path)
+  }
+
+  async function handleApplicationStatusChange(applicationId, status) {
+    setUpdatingApplicationId(applicationId)
+    setStatusErrorMessage('')
+
+    try {
+      const updatedApplication = await updateApplicationStatus(applicationId, status)
+      setApplications((current) =>
+        current.map((application) =>
+          application.applicationId === applicationId
+            ? { ...application, status: updatedApplication?.status || status }
+            : application,
+        ),
+      )
+    } catch (err) {
+      setStatusErrorMessage(
+        err?.message || 'Could not update this application right now.',
+      )
+    } finally {
+      setUpdatingApplicationId(null)
+    }
+  }
 
   return (
     <div className="fcc-app">
@@ -132,9 +182,13 @@ export default function ListingApplicationsPage() {
 
       <main className="applications-page">
         <div className="applications-page__inner">
-          <Link className="applications-page__back" to="/opportunities">
-            Back to opportunities
-          </Link>
+          <button
+            type="button"
+            className="applications-page__back"
+            onClick={handleBack}
+          >
+            {returnTarget.label}
+          </button>
 
           <header className="applications-page__header">
             <div>
@@ -149,6 +203,12 @@ export default function ListingApplicationsPage() {
               </p>
             </div>
           </header>
+
+          {statusErrorMessage ? (
+            <p className="applications-page__error" role="alert">
+              {statusErrorMessage}
+            </p>
+          ) : null}
 
           {isLoading ? (
             <section className="applications-page__empty">
@@ -167,6 +227,11 @@ export default function ListingApplicationsPage() {
             <div className="applications-list">
               {applications.map((application) => {
                 const profile = profilesByUserId[application.applicantUserId]
+                const isUpdating =
+                  updatingApplicationId === application.applicationId
+                const normalizedStatus = String(
+                  application.status || 'pending',
+                ).toLowerCase()
 
                 return (
                   <article
@@ -204,7 +269,9 @@ export default function ListingApplicationsPage() {
                           {applicantSubtitle(profile)}
                         </p>
                       </div>
-                      <span className="application-card__status">
+                      <span
+                        className={`application-card__status application-card__status--${normalizedStatus}`}
+                      >
                         {application.status || 'pending'}
                       </span>
                     </div>
@@ -228,6 +295,35 @@ export default function ListingApplicationsPage() {
                         Applicant ID: {application.applicantUserId}
                       </span>
                     </footer>
+
+                    <div className="application-card__actions">
+                      <button
+                        type="button"
+                        className="fcc-btn fcc-btn--primary"
+                        onClick={() =>
+                          handleApplicationStatusChange(
+                            application.applicationId,
+                            'accepted',
+                          )
+                        }
+                        disabled={isUpdating || normalizedStatus === 'accepted'}
+                      >
+                        {isUpdating ? 'Updating...' : 'Accept'}
+                      </button>
+                      <button
+                        type="button"
+                        className="fcc-btn fcc-btn--danger"
+                        onClick={() =>
+                          handleApplicationStatusChange(
+                            application.applicationId,
+                            'rejected',
+                          )
+                        }
+                        disabled={isUpdating || normalizedStatus === 'rejected'}
+                      >
+                        {isUpdating ? 'Updating...' : 'Reject'}
+                      </button>
+                    </div>
                   </article>
                 )
               })}
