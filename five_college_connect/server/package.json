@@ -13,10 +13,13 @@
     "test:load:smoke": "k6 run tests/load/smoke.js",
     "test:load:frontend": "k6 run tests/load/frontend-pages.js",
     "test:load:public": "k6 run tests/load/public-read-vus.js",
+    "test:load:search": "k6 run tests/load/search-heavy.js",
     "test:load:signin": "k6 run tests/load/signin-storm.js",
     "test:load:read": "k6 run tests/load/read-heavy.js",
     "test:load:auth": "k6 run tests/load/authenticated-read.js",
-    "test:load:writes": "k6 run tests/load/write-heavy.js"
+    "test:load:writes": "k6 run tests/load/write-heavy.js",
+    "test:load:search:seed": "node --env-file=.env tests/load/seed-search-dataset.js seed",
+    "test:load:search:cleanup": "node --env-file=.env tests/load/seed-search-dataset.js cleanup"
   },
   "engines": {
     "node": ">=20.0.0"

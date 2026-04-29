@@ -39,6 +39,7 @@ export const seededUsers =
 
 export const listingsLatency = new Trend("fcc_listings_latency", true);
 export const listingDetailsLatency = new Trend("fcc_listing_details_latency", true);
+export const searchLatency = new Trend("fcc_search_latency", true);
 export const authLatency = new Trend("fcc_auth_latency", true);
 export const notificationsLatency = new Trend("fcc_notifications_latency", true);
 export const applicationsLatency = new Trend("fcc_applications_latency", true);

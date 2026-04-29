@@ -12,6 +12,10 @@ This folder contains `k6` scripts for exercising the current API under sustained
   - public listing browse traffic
   - filtered listing reads
   - listing detail fan-out under higher arrival rates
+- `search-heavy.js`
+  - dedicated `/api/search/listings` traffic
+  - category + keyword filtering against a larger seeded dataset
+  - end-to-end latency checks for the scalable search path
 - `authenticated-read.js`
   - repeated signin in `setup()`
   - authenticated profile reads
@@ -29,6 +33,13 @@ Make sure:
 - the Express server is running on `http://127.0.0.1:4000` or set `K6_BASE_URL`
 - the seed data has been loaded
 - `k6` is installed on your machine
+
+For the dedicated search scenario, seed the larger search dataset first:
+
+```bash
+cd five_college_connect/server
+npm run test:load:search:seed
+```
 
 Typical local setup:
 
@@ -80,6 +91,7 @@ K6_SIGNIN_EXPECTED_USER_IDS=uuid-of-your-canary-user
 cd five_college_connect/server
 npm run test:load:smoke
 npm run test:load:read
+npm run test:load:search
 npm run test:load:auth
 npm run test:load:writes
 ```
@@ -95,6 +107,8 @@ K6_FAILED_RATE=0.02
 K6_SIGNIN_PASSWORD=DemoPass123!
 K6_SIGNIN_EMAILS=emily.rodriguez@umass.edu,michael.chen@umass.edu
 K6_SIGNIN_EXPECTED_USER_IDS=a1000000-0000-0000-0000-000000000001,a1000000-0000-0000-0000-000000000002
+K6_SEARCH_CASES=project|Campus Search Performance,tutoring|Research Match,job|Data Structures Help,study_group|Design Critique
+K6_SEARCH_LIMIT=20
 ```
 
 Examples:
@@ -102,7 +116,37 @@ Examples:
 ```bash
 K6_VUS=16 K6_DURATION=3m npm run test:load:auth
 K6_START_RATE=5 K6_RATE_STAGE_2=25 K6_RATE_STAGE_3=50 npm run test:load:read
+K6_VUS=40 K6_DURATION=60s npm run test:load:search
 K6_VUS=6 K6_DURATION=90s npm run test:load:writes
+```
+
+## Search dataset seeding
+
+The `/api/search/listings` load test is intended to run against a larger
+repeatable dataset than the demo seed.
+
+Seed it:
+
+```bash
+cd five_college_connect/server
+npm run test:load:search:seed
+```
+
+Remove it:
+
+```bash
+cd five_college_connect/server
+npm run test:load:search:cleanup
+```
+
+Useful seed environment variables:
+
+```bash
+SEARCH_LOAD_LISTING_COUNT=800
+SEARCH_LOAD_PREFIX=K6 Search Load Listing
+SEARCH_LOAD_OWNER_EMAIL=emily.rodriguez@umass.edu
+SEARCH_LOAD_TERMS=Campus Search Performance,Research Match,Data Structures Help,Design Critique
+SEARCH_LOAD_CATEGORIES=project,tutoring,job,study_group
 ```
 
 ## What will likely break first
@@ -123,4 +167,6 @@ K6_VUS=6 K6_DURATION=90s npm run test:load:writes
 
 ## Current gap
 
-- `/api/search/listings` is still returning `501 Not Implemented`, so the scalable search path today is `GET /api/listings` with query parameters.
+- Search now has a dedicated `/api/search/listings` route and a large-dataset
+  load test, but the repo still needs production metrics if you want the test
+  to explain *why* a slowdown happens instead of only showing that it happened.
