@@ -84,10 +84,36 @@ export async function updateListing(req, res, next) {
 
 export async function deleteListing(req, res, next) {
   try {
-    await listingService.deleteListing(req.params.listingId, req.user);
+    const listing = await listingService.deleteListing(req.params.listingId, req.user);
 
     res.status(200).json({
-      message: "Listing deleted successfully"
+      message: "Listing closed successfully",
+      listing
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function reopenListing(req, res, next) {
+  try {
+    const listing = await listingService.reopenListing(req.params.listingId, req.user);
+
+    res.status(200).json({
+      message: "Listing reopened successfully",
+      listing
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function permanentlyDeleteListing(req, res, next) {
+  try {
+    await listingService.permanentlyDeleteListing(req.params.listingId, req.user);
+
+    res.status(200).json({
+      message: "Listing permanently deleted successfully"
     });
   } catch (error) {
     next(error);

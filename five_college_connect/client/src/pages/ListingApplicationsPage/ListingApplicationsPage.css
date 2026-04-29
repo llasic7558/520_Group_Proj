@@ -12,6 +12,11 @@
 
 .applications-page__back {
   display: inline-flex;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--fcc-font);
+  padding: 0;
   margin-bottom: 22px;
   color: var(--fcc-maroon);
   font-size: 0.9rem;
@@ -71,6 +76,17 @@
 
 .applications-page__empty p {
   margin: 0;
+}
+
+.applications-page__error {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #f5c2c7;
+  border-radius: 10px;
+  background: #fdecea;
+  color: #9f1d1d;
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .applications-list {
@@ -158,6 +174,21 @@
   text-transform: capitalize;
 }
 
+.application-card__status--accepted {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
+.application-card__status--rejected {
+  background: rgba(159, 29, 29, 0.1);
+  color: #9f1d1d;
+}
+
+.application-card__status--pending {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+}
+
 .application-card__message {
   margin: 16px 0 0;
   padding: 14px;
@@ -189,6 +220,17 @@
   word-break: break-all;
 }
 
+.application-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.application-card__actions .fcc-btn {
+  min-width: 96px;
+}
+
 @media (max-width: 620px) {
   .applications-page {
     padding: 22px 16px 32px;
@@ -201,5 +243,13 @@
 
   .application-card__status {
     align-self: flex-start;
+  }
+
+  .application-card__actions {
+    justify-content: stretch;
+  }
+
+  .application-card__actions .fcc-btn {
+    flex: 1;
   }
 }

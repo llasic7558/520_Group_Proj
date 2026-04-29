@@ -66,6 +66,20 @@ export class ApplicationRepository {
     return result.rows[0] ? new Application(result.rows[0]) : null;
   }
 
+  async updateApplicationStatus(applicationId, status, executor = { query }) {
+    const result = await executor.query(
+      `
+        UPDATE applications
+        SET status = $2
+        WHERE application_id = $1
+        RETURNING application_id, listing_id, applicant_user_id, message, status, submitted_at
+      `,
+      [applicationId, status]
+    );
+
+    return result.rows[0] ? new Application(result.rows[0]) : null;
+  }
+
   async deleteApplication(applicationId, executor = { query }) {
     const result = await executor.query(
       `

@@ -13,6 +13,17 @@ function normalizePayload(payload) {
   };
 }
 
+export function validateApplicationStatusPayload(payload) {
+  const status = normalizeString(payload.status).toLowerCase();
+  const allowedStatuses = new Set(["pending", "accepted", "rejected"]);
+
+  if (!allowedStatuses.has(status)) {
+    throw createHttpError(400, "status must be pending, accepted, or rejected");
+  }
+
+  return { status };
+}
+
 export function validateCreateApplicationPayload(payload) {
   const normalized = normalizePayload(payload);
 

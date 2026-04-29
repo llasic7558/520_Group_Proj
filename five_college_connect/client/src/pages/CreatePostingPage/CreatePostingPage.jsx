@@ -141,7 +141,7 @@ export default function CreatePostingPage() {
     setErrorMessage('')
 
     try {
-      const listing = await createListing(buildListingPayload(form, 'published'))
+      const listing = await createListing(buildListingPayload(form, 'open'))
       logInfo('Listing published from create page', {
         listingId: listing?.listingId,
         category: form.category,

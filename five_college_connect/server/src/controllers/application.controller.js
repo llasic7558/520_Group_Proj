@@ -1,6 +1,7 @@
 import { ApplicationService } from "../services/application.service.js";
 import {
   validateCreateApplicationPayload,
+  validateApplicationStatusPayload,
   validateUpdateApplicationPayload
 } from "../validators/application.validator.js";
 
@@ -66,6 +67,24 @@ export async function updateApplication(req, res, next) {
 
     res.status(200).json({
       message: "Application updated successfully",
+      application
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateApplicationStatus(req, res, next) {
+  try {
+    const payload = validateApplicationStatusPayload(req.body);
+    const application = await applicationService.updateApplicationStatus(
+      req.params.applicationId,
+      payload.status,
+      req.user
+    );
+
+    res.status(200).json({
+      message: "Application status updated successfully",
       application
     });
   } catch (error) {

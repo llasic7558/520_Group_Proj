@@ -36,6 +36,11 @@ function normalizeExpirationDate(value) {
   return normalized || null;
 }
 
+function normalizeListingStatus(value) {
+  const normalized = normalizeString(value || "open").toLowerCase();
+  return normalized === "published" ? "open" : normalized;
+}
+
 function normalizeListingPayload(payload) {
   return {
     createdByUserId: normalizeString(payload.createdByUserId || payload.created_by_user_id),
@@ -46,7 +51,7 @@ function normalizeListingPayload(payload) {
     contactDetails: normalizeString(payload.contactDetails || payload.contact_details),
     bannerImageUrl: normalizeString(payload.bannerImageUrl || payload.banner_image_url),
     customColor: normalizeString(payload.customColor || payload.custom_color),
-    status: normalizeString(payload.status || "open"),
+    status: normalizeListingStatus(payload.status),
     expirationDate: normalizeExpirationDate(payload.expirationDate || payload.expiration_date),
     skills: normalizeSkillArray(payload.skills),
     attachments: normalizeAttachmentArray(payload.attachments)
