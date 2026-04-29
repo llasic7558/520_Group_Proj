@@ -80,6 +80,12 @@ export function OpportunityDetail({
     contactMethodLabel(posting.contact_method),
     posting.contact_details?.trim(),
   ].filter(Boolean)
+  const contactMethod = posting.contact_method?.trim().toLowerCase()
+  const contactDetails = posting.contact_details?.trim() ?? ''
+  const emailHref =
+    contactMethod === 'email' && contactDetails
+      ? `mailto:${contactDetails}`
+      : null
 
   const closeApplyModal = () => {
     if (isSubmittingApplication) return
@@ -335,10 +341,17 @@ export function OpportunityDetail({
             {hasApplied ? 'Application Sent' : 'Apply Now'}
           </button>
         )}
-        <button type="button" className="fcc-btn fcc-btn--outline">
-          <IconMessage />
-          Email
-        </button>
+        {emailHref ? (
+          <a className="fcc-btn fcc-btn--outline" href={emailHref}>
+            <IconMessage />
+            Email
+          </a>
+        ) : (
+          <button type="button" className="fcc-btn fcc-btn--outline" disabled>
+            <IconMessage />
+            Email
+          </button>
+        )}
       </footer>
 
       {isApplyModalOpen ? (
