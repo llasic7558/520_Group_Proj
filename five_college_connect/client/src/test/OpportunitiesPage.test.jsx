@@ -9,8 +9,8 @@ const sampleListing = {
   title: 'Campus Planner App',
   description: 'Build a campus planner with React and Postgres.',
   category: 'project',
-  contactMethod: 'profile',
-  contactDetails: '',
+  contactMethod: 'email',
+  contactDetails: 'poster@umass.edu',
   status: 'open',
   createdAt: '2026-04-20T12:00:00.000Z',
   updatedAt: '2026-04-20T12:00:00.000Z',
@@ -63,6 +63,19 @@ describe('OpportunitiesPage', () => {
     expect(
       screen.getByText('Welcome! Add your bio, interests, and skills to your profile.'),
     ).toBeInTheDocument()
+  })
+
+  it('renders an email link for postings that use email contact', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => mockJsonResponse({ items: [sampleListing] })),
+    )
+
+    renderWithProviders(<OpportunitiesPage />)
+
+    const emailLink = await screen.findByRole('link', { name: 'Email' })
+
+    expect(emailLink).toHaveAttribute('href', 'mailto:poster@umass.edu')
   })
 
   it('shows an error state when the listings request fails', async () => {
