@@ -103,8 +103,20 @@ describe('ProfilePage', () => {
       }),
     })
 
-    expect(await screen.findByText('Project Showcase')).toBeInTheDocument()
-    expect(screen.getByText('A real project posting.')).toBeInTheDocument()
+    const featuredProjectsSection = (await screen.findByText('Featured Projects')).closest(
+      '.prof-section',
+    )
+    const myListingsSection = screen.getByText('My Listings').closest('.prof-section')
+
+    expect(
+      within(featuredProjectsSection).getByText('Project Showcase'),
+    ).toBeInTheDocument()
+    expect(
+      within(featuredProjectsSection).getByText('A real project posting.'),
+    ).toBeInTheDocument()
+    expect(
+      within(myListingsSection).getByText('Project Showcase'),
+    ).toBeInTheDocument()
     expect(screen.getByText('My Applications')).toBeInTheDocument()
     expect(screen.getByText('Research Assistant')).toBeInTheDocument()
     expect(screen.getByText('pending')).toBeInTheDocument()

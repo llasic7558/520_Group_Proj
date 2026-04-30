@@ -1,0 +1,89 @@
+name: PR Regression
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: pr-regression-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend Regression
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: five_college_connect
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d five_college_connect"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    defaults:
+      run:
+        working-directory: five_college_connect/server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: five_college_connect/server/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Create backend env file for CI
+        run: cp .env.example .env
+
+      - name: Load schema, migrations, and seed data
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -d five_college_connect -f database/schema.sql
+          for migration in database/migrations/*.sql; do
+            if [ -f "$migration" ]; then
+              psql -h 127.0.0.1 -U postgres -d five_college_connect -f "$migration"
+            fi
+          done
+          psql -h 127.0.0.1 -U postgres -d five_college_connect -f database/seed.sql
+
+      - name: Run backend regression tests
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/five_college_connect
+          DB_SSL: "false"
+          AUTH_TOKEN_SECRET: ci_secret_key
+          CLIENT_URL: http://localhost:3000
+          EMAIL_VERIFICATION_BASE_URL: http://localhost:3000/verify-email
+        run: npm test
+
+  frontend:
+    name: Frontend Regression
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: five_college_connect/client
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: five_college_connect/client/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Run frontend unit tests
+        run: npm test
+
+      - name: Build frontend
+        run: npm run build

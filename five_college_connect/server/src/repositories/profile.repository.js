@@ -83,6 +83,36 @@ export class ProfileRepository {
     return result.rows[0] ? new Profile(result.rows[0]) : null;
   }
 
+  async findByUserIds(userIds, executor = { query }) {
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return new Map();
+    }
+
+    const result = await executor.query(
+      `
+        SELECT
+          profile_id,
+          user_id,
+          full_name,
+          bio,
+          college,
+          major,
+          graduation_year,
+          interests,
+          availability,
+          looking_for,
+          profile_image_url
+        FROM profiles
+        WHERE user_id = ANY($1::uuid[])
+      `,
+      [userIds]
+    );
+
+    return new Map(
+      result.rows.map((row) => [row.user_id, new Profile(row)])
+    );
+  }
+
   async updateByUserId(
     userId,
     {
