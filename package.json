@@ -1,0 +1,22 @@
+{
+  "name": "five-college-connect-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Top-level dev scripts for the Five College Connect monorepo.",
+  "scripts": {
+    "dev": "docker compose up -d --wait postgres && concurrently -n server,client -c blue,green \"npm --prefix five_college_connect/server run dev\" \"npm --prefix five_college_connect/client run dev\"",
+    "up": "docker compose --profile full up",
+    "down": "docker compose down",
+    "db:up": "docker compose up -d --wait postgres",
+    "db:down": "docker compose stop postgres",
+    "db:reset": "docker compose down -v && docker compose up -d --wait postgres",
+    "install:all": "npm install && npm --prefix five_college_connect/server install && npm --prefix five_college_connect/client install",
+    "test:server": "npm --prefix five_college_connect/server test",
+    "test:client": "npm --prefix five_college_connect/client test",
+    "test:client:build": "npm --prefix five_college_connect/client run build",
+    "test:regression": "npm run test:server && npm run test:client && npm run test:client:build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

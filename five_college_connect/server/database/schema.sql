@@ -1,4 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE TABLE IF NOT EXISTS users (
   user_id        UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -169,6 +170,7 @@ CREATE INDEX IF NOT EXISTS idx_listings_category      ON listings(category);
 CREATE INDEX IF NOT EXISTS idx_listings_status        ON listings(status);
 CREATE INDEX IF NOT EXISTS idx_listings_expiration    ON listings(expiration_date);
 CREATE INDEX IF NOT EXISTS idx_listings_browse        ON listings(status, category, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_listings_title_trgm    ON listings USING gin (title gin_trgm_ops);
 
 CREATE INDEX IF NOT EXISTS idx_listing_skills_listing ON listing_skills(listing_id);
 CREATE INDEX IF NOT EXISTS idx_listing_skills_skill   ON listing_skills(skill_id);

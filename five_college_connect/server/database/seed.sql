@@ -1,14 +1,17 @@
 BEGIN;
 
+-- Local testing login note:
+-- All seeded users currently use the password `DemoPass123!`
+
 INSERT INTO users (user_id, username, email, password_hash, role, email_verified, teacher_badge, status) VALUES
-  ('a1000000-0000-0000-0000-000000000001', 'emily_r',   'emily.rodriguez@umass.edu',   '$argon2id$placeholder_hash_1', 'student',   TRUE,  FALSE, 'active'),
-  ('a1000000-0000-0000-0000-000000000002', 'michael_c', 'michael.chen@umass.edu',      '$argon2id$placeholder_hash_2', 'student',   TRUE,  FALSE, 'active'),
-  ('a1000000-0000-0000-0000-000000000003', 'sarah_j',   'sarah.johnson@umass.edu',     '$argon2id$placeholder_hash_3', 'student',   TRUE,  FALSE, 'active'),
-  ('a1000000-0000-0000-0000-000000000004', 'dr_chen',   'chen.lab@umass.edu',          '$argon2id$placeholder_hash_4', 'professor', TRUE,  TRUE,  'active'),
-  ('a1000000-0000-0000-0000-000000000005', 'alex_k',    'alex.kim@amherst.edu',        '$argon2id$placeholder_hash_5', 'student',   TRUE,  FALSE, 'active'),
-  ('a1000000-0000-0000-0000-000000000006', 'priya_s',   'priya.sharma@smith.edu',      '$argon2id$placeholder_hash_6', 'student',   TRUE,  FALSE, 'active'),
-  ('a1000000-0000-0000-0000-000000000007', 'james_w',   'james.wu@hampshire.edu',      '$argon2id$placeholder_hash_7', 'student',   TRUE,  FALSE, 'active'),
-  ('a1000000-0000-0000-0000-000000000008', 'lisa_m',    'lisa.martinez@mtholyoke.edu', '$argon2id$placeholder_hash_8', 'student',   FALSE, FALSE, 'active')
+  ('a1000000-0000-0000-0000-000000000001', 'emily_r',   'emily.rodriguez@umass.edu',   '$argon2id$v=19$m=65536,t=3,p=4$qx5aJz8mZQEHFLeQyJAOZw$CeZrIIZfNvLsSbQmfcn72TFRPtTSdNkXlLuZVmD/2xs', 'student',   TRUE,  FALSE, 'active'),
+  ('a1000000-0000-0000-0000-000000000002', 'michael_c', 'michael.chen@umass.edu',      '$argon2id$v=19$m=65536,t=3,p=4$qx5aJz8mZQEHFLeQyJAOZw$CeZrIIZfNvLsSbQmfcn72TFRPtTSdNkXlLuZVmD/2xs', 'student',   TRUE,  FALSE, 'active'),
+  ('a1000000-0000-0000-0000-000000000003', 'sarah_j',   'sarah.johnson@umass.edu',     '$argon2id$v=19$m=65536,t=3,p=4$qx5aJz8mZQEHFLeQyJAOZw$CeZrIIZfNvLsSbQmfcn72TFRPtTSdNkXlLuZVmD/2xs', 'student',   TRUE,  FALSE, 'active'),
+  ('a1000000-0000-0000-0000-000000000004', 'dr_chen',   'chen.lab@umass.edu',          '$argon2id$v=19$m=65536,t=3,p=4$qx5aJz8mZQEHFLeQyJAOZw$CeZrIIZfNvLsSbQmfcn72TFRPtTSdNkXlLuZVmD/2xs', 'professor', TRUE,  TRUE,  'active'),
+  ('a1000000-0000-0000-0000-000000000005', 'alex_k',    'alex.kim@amherst.edu',        '$argon2id$v=19$m=65536,t=3,p=4$qx5aJz8mZQEHFLeQyJAOZw$CeZrIIZfNvLsSbQmfcn72TFRPtTSdNkXlLuZVmD/2xs', 'student',   TRUE,  FALSE, 'active'),
+  ('a1000000-0000-0000-0000-000000000006', 'priya_s',   'priya.sharma@smith.edu',      '$argon2id$v=19$m=65536,t=3,p=4$qx5aJz8mZQEHFLeQyJAOZw$CeZrIIZfNvLsSbQmfcn72TFRPtTSdNkXlLuZVmD/2xs', 'student',   TRUE,  FALSE, 'active'),
+  ('a1000000-0000-0000-0000-000000000007', 'james_w',   'james.wu@hampshire.edu',      '$argon2id$v=19$m=65536,t=3,p=4$qx5aJz8mZQEHFLeQyJAOZw$CeZrIIZfNvLsSbQmfcn72TFRPtTSdNkXlLuZVmD/2xs', 'student',   TRUE,  FALSE, 'active'),
+  ('a1000000-0000-0000-0000-000000000008', 'lisa_m',    'lisa.martinez@mtholyoke.edu', '$argon2id$v=19$m=65536,t=3,p=4$qx5aJz8mZQEHFLeQyJAOZw$CeZrIIZfNvLsSbQmfcn72TFRPtTSdNkXlLuZVmD/2xs', 'student',   FALSE, FALSE, 'active')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO email_verification_tokens (user_id, token, expires_at) VALUES

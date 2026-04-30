@@ -1,0 +1,86 @@
+@import '../shared/simplePages.css';
+
+/* ---------- Wizard progress dots ---------- */
+.signup-steps {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  margin: 0 0 24px;
+}
+
+.signup-steps__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.signup-steps__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--fcc-border);
+  background: transparent;
+}
+
+.signup-steps__dot--current {
+  background: var(--fcc-maroon);
+  border-color: var(--fcc-maroon);
+}
+
+.signup-steps__dot--done {
+  background: rgba(128, 48, 48, 0.4);
+  border-color: rgba(128, 48, 48, 0.4);
+}
+
+.signup-steps__label {
+  font-size: 0.8rem;
+  color: var(--fcc-muted);
+}
+
+.signup-steps__label--current {
+  color: var(--fcc-text);
+  font-weight: 600;
+}
+
+/* ---------- Wizard navigation button row ---------- */
+.signup-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.signup-nav--end {
+  justify-content: flex-end;
+}
+
+/* ---------- Read-only college pill on Step 2 ---------- */
+.signup-readonly {
+  padding: 10px 12px;
+  border: 1px solid var(--fcc-border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--fcc-muted);
+  font-family: var(--fcc-font);
+  font-size: 1rem;
+}
+
+/* ---------- Inline error banner shown above the current step ---------- */
+.signup-error {
+  color: #b00020;
+  background: #fdecea;
+  border: 1px solid #f5c2c7;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+/* ---------- Hint text under the Step 2 fields ---------- */
+.signup-hint {
+  font-size: 0.85rem;
+  color: var(--fcc-muted);
+  margin: 12px 0 0;
+}
+

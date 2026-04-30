@@ -1,0 +1,158 @@
+/* shared styles for landing/login/signup so we dont copy paste */
+
+.simple-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: clamp(32px, 8vh, 64px) 20px;
+  background: var(--fcc-surface);
+}
+
+.simple-page__main {
+  width: 100%;
+  max-width: 400px;
+}
+
+.simple-page__main--center {
+  text-align: center;
+  margin-top: 10vh;
+}
+
+.simple-page__title {
+  margin: 0 0 12px;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--fcc-text);
+}
+
+.simple-page__title--sm {
+  font-size: 1.5rem;
+}
+
+.simple-page__lede {
+  margin: 0 0 28px;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--fcc-muted);
+}
+
+.simple-page__hint {
+  margin: 0 0 20px;
+  font-size: 0.9rem;
+  color: var(--fcc-muted);
+  line-height: 1.45;
+}
+
+.simple-page__back {
+  margin: 0 0 20px;
+  font-size: 0.9rem;
+}
+
+.simple-page__back a {
+  color: var(--fcc-maroon);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.simple-page__back a:hover {
+  text-decoration: underline;
+}
+
+.simple-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.simple-page__footer {
+  margin: 24px 0 0;
+  font-size: 0.9rem;
+  color: var(--fcc-muted);
+  text-align: center;
+}
+
+.simple-page__footer a {
+  color: var(--fcc-maroon);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.simple-page__footer a:hover {
+  text-decoration: underline;
+}
+
+.simple-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-family: var(--fcc-font);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+}
+
+.simple-btn--primary {
+  background: var(--fcc-maroon);
+  color: #fff;
+}
+
+.simple-btn--primary:hover {
+  background: var(--fcc-maroon-dark);
+}
+
+.simple-btn--outline {
+  background: #fff;
+  color: var(--fcc-maroon);
+  border: 2px solid var(--fcc-maroon);
+}
+
+.simple-btn--outline:hover {
+  background: rgba(128, 48, 48, 0.06);
+}
+
+.simple-btn--block {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.simple-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.simple-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.simple-field__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fcc-text);
+}
+
+.simple-field input {
+  padding: 10px 12px;
+  border: 1px solid var(--fcc-border);
+  border-radius: 8px;
+  font-family: var(--fcc-font);
+  font-size: 1rem;
+  background: #fff;
+  color: var(--fcc-text);
+}
+
+.simple-field input:focus {
+  outline: 2px solid rgba(128, 48, 48, 0.35);
+  outline-offset: 1px;
+  border-color: var(--fcc-maroon);
+}

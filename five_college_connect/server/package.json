@@ -1,0 +1,34 @@
+{
+  "name": "five-college-connector-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend scaffold for the 5-College Connector project.",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --env-file=.env --watch src/server.js",
+    "start": "node --env-file=.env src/server.js",
+    "test": "node --env-file=.env --test tests/*.api.test.js",
+    "test:api": "node --env-file=.env --test tests/*.api.test.js",
+    "test:load:smoke": "k6 run tests/load/smoke.js",
+    "test:load:frontend": "k6 run tests/load/frontend-pages.js",
+    "test:load:public": "k6 run tests/load/public-read-vus.js",
+    "test:load:search": "k6 run tests/load/search-heavy.js",
+    "test:load:signin": "k6 run tests/load/signin-storm.js",
+    "test:load:read": "k6 run tests/load/read-heavy.js",
+    "test:load:auth": "k6 run tests/load/authenticated-read.js",
+    "test:load:writes": "k6 run tests/load/write-heavy.js",
+    "test:load:search:seed": "node --env-file=.env tests/load/seed-search-dataset.js seed",
+    "test:load:search:cleanup": "node --env-file=.env tests/load/seed-search-dataset.js cleanup"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "argon2": "^0.41.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "node-mailjet": "^6.0.11",
+    "pg": "^8.16.3"
+  }
+}
