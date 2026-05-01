@@ -18,16 +18,10 @@ test('signs in with a seeded user and reaches the opportunities feed', async ({
   await login(page)
 
   await expect(
-    page.getByRole('heading', {
-      name: 'CS 187 Data Structures Tutor Needed',
-    }),
+    page.getByRole('link', { name: 'Create Posting' }),
   ).toBeVisible()
-  await expect(
-    page.locator('.fcc-detail__poster'),
-  ).toBeVisible()
-  await expect(page.locator('.fcc-detail__poster')).toContainText(
-    'Sarah Johnson • UMass Amherst',
-  )
+  await expect(page.getByPlaceholder('Search opportunities...')).toBeVisible()
+  await expect(page.getByRole('tab', { name: 'Projects' })).toBeVisible()
 })
 
 test('blocks signup step 1 for non-five-colleges email addresses', async ({

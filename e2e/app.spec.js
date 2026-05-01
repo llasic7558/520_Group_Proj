@@ -1,17 +1,24 @@
 import { expect, test } from '@playwright/test'
-import { login, seededUser } from './fixtures.js'
+import {
+  createListingApi,
+  login,
+  seededOwner,
+  seededUser,
+  uniqueListingTitle,
+} from './fixtures.js'
 
-test('filters the opportunities feed after login', async ({ page }) => {
+test('filters the opportunities feed after login', async ({ page, request }) => {
+  const { title } = await createListingApi(request, seededOwner, {
+    title: uniqueListingTitle('Playwright Project Filter Target'),
+    category: 'project',
+  })
+
   await login(page)
 
   await page.getByRole('tab', { name: 'Projects' }).click()
+  await page.getByPlaceholder('Search opportunities...').fill(title)
 
-  await expect(
-    page.getByText('React Developer for Sustainability App'),
-  ).toBeVisible()
-  await expect(
-    page.getByRole('heading', { name: 'React Developer for Sustainability App' }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: title })).toBeVisible()
 })
 
 test('opens the signed-in user profile page', async ({ page }) => {
