@@ -107,7 +107,7 @@ export default function VerifyEmailPage() {
 
   return (
     <div className="simple-page">
-      <main className="simple-page__main simple-page__main--center">
+      <main id="main-content" tabIndex={-1} className="simple-page__main simple-page__main--center">
         <h1 className="simple-page__title">Verify your email</h1>
         <p className="simple-page__lede">
           {email

@@ -180,7 +180,7 @@ export default function ListingApplicationsPage() {
     <div className="fcc-app">
       <TopNav searchPlaceholder="Search opportunities..." />
 
-      <main className="applications-page">
+      <main id="main-content" tabIndex={-1} className="applications-page">
         <div className="applications-page__inner">
           <button
             type="button"

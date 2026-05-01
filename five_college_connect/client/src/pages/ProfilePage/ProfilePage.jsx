@@ -680,7 +680,7 @@ export default function ProfilePage() {
       <TopNav searchPlaceholder="Search for opportunities, skills, or students..." />
 
       <div className="prof-shell">
-        <div className="prof-main">
+        <div id="main-content" role="main" tabIndex={-1} className="prof-main">
           {errorMessage ? (
             <p
               role="alert"

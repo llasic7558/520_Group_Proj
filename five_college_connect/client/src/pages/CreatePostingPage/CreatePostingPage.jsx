@@ -191,7 +191,7 @@ export default function CreatePostingPage() {
 
       {/* left = form, right = preview + toggles */}
       <div className="cp-shell">
-        <div className="cp-form-col">
+        <div id="main-content" role="main" tabIndex={-1} className="cp-form-col">
           {errorMessage ? (
             <p
               role="alert"
