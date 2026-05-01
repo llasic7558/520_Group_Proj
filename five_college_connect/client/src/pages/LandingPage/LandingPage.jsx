@@ -6,7 +6,7 @@ import umassHero from './umass.jpg'
 export default function LandingPage() {
   return (
     <div className="simple-page">
-      <main className="simple-page__main simple-page__main--center landing-main">
+      <main id="main-content" tabIndex={-1} className="simple-page__main simple-page__main--center landing-main">
         <header className="landing-hero">
           <div className="landing-hero__grid">
             <div className="landing-hero__copy">
@@ -41,7 +41,15 @@ export default function LandingPage() {
             </div>
 
             <div className="landing-hero__visual" aria-hidden="true">
-              <img className="landing-hero__image" src={umassHero} alt="" />
+              <img
+                className="landing-hero__image"
+                src={umassHero}
+                alt=""
+                width="800"
+                height="480"
+                loading="eager"
+                decoding="async"
+              />
             </div>
           </div>
         </header>

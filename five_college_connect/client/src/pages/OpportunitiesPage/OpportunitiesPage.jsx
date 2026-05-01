@@ -205,7 +205,7 @@ export default function OpportunitiesPage() {
             setSelectedId(null)
           }}
         />
-        <main className="fcc-main">
+        <main id="main-content" tabIndex={-1} className="fcc-main">
           {isLoading ? (
             <section className="fcc-detail fcc-detail--empty">
               <p>Loading opportunities...</p>

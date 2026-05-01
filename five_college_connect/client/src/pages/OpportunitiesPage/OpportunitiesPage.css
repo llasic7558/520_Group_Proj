@@ -789,13 +789,53 @@ ul.fcc-listing-meta {
   padding-top: 4px;
 }
 
+@media (max-width: 900px) {
+  .fcc-sidebar {
+    min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--fcc-border);
+  }
+
+  .fcc-post-list {
+    max-height: 50vh;
+  }
+
+  .fcc-detail__title {
+    font-size: 1.4rem;
+  }
+}
+
 @media (max-width: 600px) {
+  .fcc-topnav {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+
   .fcc-topnav__search-wrap {
     display: none;
   }
 
   .fcc-brand__text {
     display: none;
+  }
+
+  .fcc-btn {
+    padding: 10px 14px;
+    font-size: 0.85rem;
+  }
+
+  .fcc-icon-btn,
+  .fcc-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .fcc-detail {
+    padding: 18px 16px 28px;
+  }
+
+  .fcc-detail__title-row {
+    flex-direction: column;
   }
 
   .fcc-detail__footer {
@@ -821,6 +861,13 @@ ul.fcc-listing-meta {
 
   .fcc-application-form__actions .fcc-btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .fcc-btn--primary span,
+  .fcc-btn--primary {
+    font-size: 0.8rem;
   }
 }
 
