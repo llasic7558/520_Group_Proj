@@ -239,8 +239,10 @@
   margin-bottom: 0;
 }
 
-.prof-section__title svg {
+.prof-section__title svg,
+.prof-section__icon-folder {
   opacity: 0.75;
+  flex-shrink: 0;
 }
 
 .prof-section__body {
@@ -274,6 +276,22 @@
 }
 
 .prof-text-link:hover {
+  text-decoration: underline;
+}
+
+.prof-view-all-btn {
+  font-family: var(--fcc-font);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fcc-maroon);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.prof-view-all-btn:hover {
   text-decoration: underline;
 }
 
@@ -370,6 +388,12 @@
   flex-shrink: 0;
   border-radius: 8px;
   background: linear-gradient(135deg, #ddd, #bbb);
+}
+
+.prof-project-card__thumb--image {
+  background-size: cover;
+  background-position: center;
+  background-color: #e8e8e8;
 }
 
 .prof-project-card__title {

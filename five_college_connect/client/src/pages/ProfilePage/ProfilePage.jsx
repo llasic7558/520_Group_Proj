@@ -11,6 +11,7 @@ import {
   reopenListing,
   updateProfile,
 } from '../../lib/api.js'
+import AddProfileProjectModal from '../../components/profile/AddProfileProjectModal.jsx'
 import { TopNav } from '../../components/opportunities/TopNav.jsx'
 import {
   IconGithub,
@@ -53,6 +54,9 @@ const EMPTY_PROFILE = {
   skills: [],
   courses: [],
 }
+
+/** Max project cards shown in Featured Projects before requiring "View All". */
+const FEATURED_PROJECTS_PREVIEW_MAX = 2
 
 function createDraftSkill() {
   return {
@@ -178,11 +182,12 @@ function normalizeProjectListings(items) {
     project_id: listing.listingId,
     title: listing.title || 'Untitled project',
     description: listing.description || 'No description provided.',
+    image_url: listing.bannerImageUrl || listing.banner_image_url || '',
     tags: Array.isArray(listing.skills)
       ? listing.skills
           .map((skill) => skill.name)
           .filter(Boolean)
-          .slice(0, 4)
+          .slice(0, 12)
       : [],
   }))
 }
@@ -294,6 +299,14 @@ export default function ProfilePage() {
   const [openListingMenuId, setOpenListingMenuId] = useState(null)
   const [listingToDelete, setListingToDelete] = useState(null)
   const [deletingListingId, setDeletingListingId] = useState(null)
+  const [isAddProjectOpen, setIsAddProjectOpen] = useState(false)
+  const [featuredProjectsExpanded, setFeaturedProjectsExpanded] = useState(false)
+
+  useEffect(() => {
+    if (!isEditing) {
+      setFeaturedProjectsExpanded(false)
+    }
+  }, [isEditing])
 
   useEffect(() => {
     let ignore = false
@@ -524,15 +537,8 @@ export default function ProfilePage() {
             return current
           }
 
-          return [
-            {
-              project_id: listing.listingId,
-              title: listing.title,
-              description: listing.description,
-              tags: [],
-            },
-            ...current,
-          ]
+          const [next] = normalizeProjectListings([reopened])
+          return next ? [next, ...current] : current
         })
       }
       setOpenListingMenuId(null)
@@ -571,6 +577,33 @@ export default function ProfilePage() {
     } finally {
       setDeletingListingId(null)
     }
+  }
+
+  function handleFeaturedProjectCreated(listing) {
+    if (!listing) return
+
+    setOwnedListings((prev) => {
+      const [next] = normalizeOwnedListings([listing])
+      if (!next) return prev
+      return [next, ...prev.filter((l) => l.listingId !== next.listingId)]
+    })
+    setProjectListings((prev) => {
+      const [next] = normalizeProjectListings([listing])
+      if (!next) return prev
+      return [next, ...prev.filter((p) => p.project_id !== next.project_id)]
+    })
+    const occurredAt = listing.createdAt || new Date().toISOString()
+    setRecentActivity((prev) =>
+      [
+        {
+          id: `listing-${listing.listingId}`,
+          message: `Created a project posting: ${listing.title}`,
+          occurredAt,
+          occurred_at_label: 'Just now',
+        },
+        ...prev.filter((a) => a.id !== `listing-${listing.listingId}`),
+      ].slice(0, 6),
+    )
   }
 
   function cancelEdit() {
@@ -674,6 +707,13 @@ export default function ProfilePage() {
   const display = isEditing && draft ? draft : profile ?? EMPTY_PROFILE
   const skills = display.skills ?? []
   const courses = display.courses ?? []
+
+  const featuredProjectsOverflow =
+    projectListings.length > FEATURED_PROJECTS_PREVIEW_MAX
+  const visibleFeaturedProjects =
+    isEditing || !featuredProjectsOverflow || featuredProjectsExpanded
+      ? projectListings
+      : projectListings.slice(0, FEATURED_PROJECTS_PREVIEW_MAX)
 
   return (
     <div className="prof-app">
@@ -1110,33 +1150,70 @@ export default function ProfilePage() {
 
           <section className="prof-section">
             <div className="prof-section__head">
-              <h2 className="prof-section__title">Featured Projects</h2>
+              <h2 className="prof-section__title">
+                <svg
+                  className="prof-section__icon-folder"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                </svg>
+                Featured Projects
+              </h2>
               {isEditing ? (
                 <button
                   type="button"
                   className="prof-link-btn"
-                  disabled
+                  onClick={() => setIsAddProjectOpen(true)}
+                  disabled={isSaving || isLoading}
                 >
                   + Add Project
                 </button>
-              ) : (
-                <Link className="prof-text-link" to="/postings/new">
-                  Create Project
-                </Link>
-              )}
+              ) : featuredProjectsOverflow ? (
+                <button
+                  type="button"
+                  className="prof-view-all-btn"
+                  onClick={() =>
+                    setFeaturedProjectsExpanded((current) => !current)
+                  }
+                >
+                  {featuredProjectsExpanded
+                    ? 'Show less'
+                    : `View All (${projectListings.length})`}
+                </button>
+              ) : null}
             </div>
             <div className="prof-projects">
               {isLoading ? (
                 <p className="prof-section__body">Loading projects...</p>
               ) : projectListings.length === 0 ? (
                 <p className="prof-section__body">
-                  No project listings yet. Create a posting in the project
-                  category to show work here.
+                  You have not added any project yet.
                 </p>
               ) : (
-                projectListings.map((project) => (
+                visibleFeaturedProjects.map((project) => (
                   <article key={project.project_id} className="prof-project-card">
-                    <div className="prof-project-card__thumb" aria-hidden />
+                    <div
+                      className={
+                        project.image_url
+                          ? 'prof-project-card__thumb prof-project-card__thumb--image'
+                          : 'prof-project-card__thumb'
+                      }
+                      style={
+                        project.image_url
+                          ? { backgroundImage: `url(${project.image_url})` }
+                          : undefined
+                      }
+                      aria-hidden
+                    />
                     <div className="prof-project-card__body">
                       <h3 className="prof-project-card__title">{project.title}</h3>
                       <p className="prof-project-card__desc">
@@ -1547,6 +1624,12 @@ export default function ProfilePage() {
           </div>
         </div>
       ) : null}
+
+      <AddProfileProjectModal
+        open={isAddProjectOpen}
+        onClose={() => setIsAddProjectOpen(false)}
+        onCreated={handleFeaturedProjectCreated}
+      />
     </div>
   )
 }
