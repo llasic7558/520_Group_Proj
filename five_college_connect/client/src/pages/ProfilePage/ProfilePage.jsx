@@ -1204,8 +1204,8 @@ export default function ProfilePage() {
                     <div
                       className={
                         project.image_url
-                          ? 'prof-project-card__thumb prof-project-card__thumb--image'
-                          : 'prof-project-card__thumb'
+                          ? 'prof-project-card__media prof-project-card__media--image'
+                          : 'prof-project-card__media'
                       }
                       style={
                         project.image_url
