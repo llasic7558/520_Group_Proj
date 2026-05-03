@@ -14,12 +14,16 @@
     "test:server": "npm --prefix five_college_connect/server test",
     "test:client": "npm --prefix five_college_connect/client test",
     "test:client:build": "npm --prefix five_college_connect/client run build",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:install": "playwright install chromium",
     "test:regression": "npm run test:server && npm run test:client && npm run test:client:build",
     "coverage:server": "npm --prefix five_college_connect/server run coverage",
     "coverage:client": "npm --prefix five_college_connect/client run coverage",
     "coverage": "npm run coverage:server && npm run coverage:client && node scripts/report-overall-coverage.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "concurrently": "^9.0.0"
   }
 }
