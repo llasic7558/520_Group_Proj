@@ -116,6 +116,13 @@
   background: linear-gradient(135deg, #e8e8e8, #cfcfcf);
 }
 
+.cp-avatar__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .cp-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;

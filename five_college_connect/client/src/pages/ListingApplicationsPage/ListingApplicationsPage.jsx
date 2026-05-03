@@ -14,6 +14,7 @@ import {
   fetchProfile,
   updateApplicationStatus,
 } from '../../lib/api.js'
+import { resolveProfileImageUrl } from '../../lib/profileImageUrl.js'
 import '../OpportunitiesPage/OpportunitiesPage.css'
 import './ListingApplicationsPage.css'
 
@@ -227,6 +228,9 @@ export default function ListingApplicationsPage() {
             <div className="applications-list">
               {applications.map((application) => {
                 const profile = profilesByUserId[application.applicantUserId]
+                const applicantAvatarSrc = resolveProfileImageUrl(
+                  profile?.profileImageUrl || profile?.profile_image_url,
+                )
                 const isUpdating =
                   updatingApplicationId === application.applicationId
                 const normalizedStatus = String(
@@ -250,7 +254,16 @@ export default function ListingApplicationsPage() {
                         }
                         disabled={!profile}
                       >
-                        {applicantName(profile, application).slice(0, 1)}
+                        {applicantAvatarSrc ? (
+                          <img
+                            src={applicantAvatarSrc}
+                            alt=""
+                            className="application-card__avatar-img"
+                            decoding="async"
+                          />
+                        ) : (
+                          applicantName(profile, application).slice(0, 1)
+                        )}
                       </button>
                       <div className="application-card__identity">
                         <button

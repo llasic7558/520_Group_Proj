@@ -53,6 +53,13 @@
   flex-shrink: 0;
 }
 
+.profile-preview__avatar--photo {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: transparent;
+}
+
 .profile-preview__info {
   min-width: 0;
   padding-top: 14px;
