@@ -10,8 +10,10 @@ import {
   IconPin,
   LogoCap,
 } from '../../components/opportunities/Icons.jsx'
+import { useAuth } from '../../context/AuthContext.js'
 import { createListing } from '../../lib/api.js'
 import { logError, logInfo, logWarn } from '../../lib/logger.js'
+import { resolveProfileImageUrl } from '../../lib/profileImageUrl.js'
 import './CreatePostingPage.css'
 
 // big buttons for listing category (same ids as backend category enum)
@@ -83,6 +85,8 @@ function ToggleRow({ id, label, checked, onChange }) {
 
 export default function CreatePostingPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const navAvatarSrc = resolveProfileImageUrl(user?.profileImageUrl)
   // one big object is easier than a million usestates
   const [form, setForm] = useState({
     title: '',
@@ -184,7 +188,16 @@ export default function CreatePostingPage() {
             <IconBell />
           </button>
           <Link to="/profile" className="cp-avatar" aria-label="My profile">
-            <span className="cp-avatar__ph" />
+            {navAvatarSrc ? (
+              <img
+                src={navAvatarSrc}
+                alt=""
+                className="cp-avatar__img"
+                decoding="async"
+              />
+            ) : (
+              <span className="cp-avatar__ph" />
+            )}
           </Link>
         </div>
       </header>

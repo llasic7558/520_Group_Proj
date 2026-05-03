@@ -1,4 +1,5 @@
 import './ProfilePreviewModal.css'
+import { resolveProfileImageUrl } from '../lib/profileImageUrl.js'
 
 function profileName(profile) {
   return profile?.fullName || profile?.full_name || 'Student profile'
@@ -32,6 +33,9 @@ export default function ProfilePreviewModal({
   if (!profile) return null
 
   const name = profileName(profile)
+  const avatarSrc = resolveProfileImageUrl(
+    profile.profileImageUrl || profile.profile_image_url,
+  )
 
   return (
     <div className="profile-preview-backdrop" role="presentation">
@@ -44,8 +48,22 @@ export default function ProfilePreviewModal({
         <div className="profile-preview__banner" />
         <div className="profile-preview__body">
           <div className="profile-preview__hero">
-            <div className="profile-preview__avatar" aria-hidden>
-              {name.slice(0, 1)}
+            <div
+              className={
+                avatarSrc
+                  ? 'profile-preview__avatar profile-preview__avatar--photo'
+                  : 'profile-preview__avatar'
+              }
+              aria-hidden
+              style={
+                avatarSrc
+                  ? {
+                      backgroundImage: `url(${JSON.stringify(avatarSrc)})`,
+                    }
+                  : undefined
+              }
+            >
+              {!avatarSrc ? name.slice(0, 1) : null}
             </div>
             <div className="profile-preview__info">
               <h2 id="profile-preview-title" className="profile-preview__name">

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ProfilePreviewModal from '../ProfilePreviewModal.jsx'
 import { closeListing, createApplication, fetchProfile } from '../../lib/api.js'
+import { resolveProfileImageUrl } from '../../lib/profileImageUrl.js'
 import { useAuth } from '../../context/AuthContext.js'
 import {
   CATEGORY_META,
@@ -23,6 +24,30 @@ import {
 } from './Icons.jsx'
 
 const APPLICATION_MESSAGE_MIN_LENGTH = 1
+
+function ordinalDay(day) {
+  const n = Number(day)
+  const suffix =
+    n % 10 === 1 && n % 100 !== 11
+      ? 'st'
+      : n % 10 === 2 && n % 100 !== 12
+        ? 'nd'
+        : n % 10 === 3 && n % 100 !== 13
+          ? 'rd'
+          : 'th'
+  return `${n}${suffix}`
+}
+
+/** e.g. May 3rd, 2026 */
+function formatListingDetailDate(iso) {
+  if (!iso) return '—'
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return String(iso)
+  const month = date.toLocaleString('en-US', { month: 'long' })
+  const day = ordinalDay(date.getDate())
+  const year = date.getFullYear()
+  return `${month} ${day}, ${year}`
+}
 
 function categoryChipClass(category) {
   return CATEGORY_META[category]?.chipClass ?? 'chipTutoring'
@@ -93,6 +118,8 @@ export function OpportunityDetail({
     contactMethod === 'email' && contactDetails
       ? `mailto:${contactDetails}`
       : null
+
+  const posterImageUrl = resolveProfileImageUrl(profile?.profile_image_url)
 
   const closeApplyModal = () => {
     if (isSubmittingApplication) return
@@ -268,7 +295,8 @@ export function OpportunityDetail({
             </li>
             {posting.expiration_date ? (
               <li>
-                <strong>Expires:</strong> {posting.expiration_date}
+                <strong>Expires:</strong>{' '}
+                {formatListingDetailDate(posting.expiration_date)}
               </li>
             ) : null}
             {posting.banner_image_url ? (
@@ -291,10 +319,12 @@ export function OpportunityDetail({
               <strong>Listing ID:</strong> <code>{posting.listing_id}</code>
             </li>
             <li>
-              <strong>Created:</strong> {posting.created_at}
+              <strong>Created:</strong>{' '}
+              {formatListingDetailDate(posting.created_at)}
             </li>
             <li>
-              <strong>Updated:</strong> {posting.updated_at}
+              <strong>Updated:</strong>{' '}
+              {formatListingDetailDate(posting.updated_at)}
             </li>
             <li>
               <strong>Posted by (user):</strong>{' '}
@@ -308,10 +338,21 @@ export function OpportunityDetail({
           <div className="fcc-poster-card">
             <button
               type="button"
-              className="fcc-poster-card__avatar fcc-poster-card__avatar--button"
+              className={
+                posterImageUrl
+                  ? 'fcc-poster-card__avatar fcc-poster-card__avatar--button fcc-poster-card__avatar--photo'
+                  : 'fcc-poster-card__avatar fcc-poster-card__avatar--button'
+              }
               aria-label={`View ${profile?.full_name || 'poster'} profile`}
               onClick={handleOwnerProfileOpen}
               disabled={!ownerUserId || isLoadingOwnerProfile}
+              style={
+                posterImageUrl
+                  ? {
+                      backgroundImage: `url(${JSON.stringify(posterImageUrl)})`,
+                    }
+                  : undefined
+              }
             />
             <div className="fcc-poster-card__info">
               <button
