@@ -24,6 +24,30 @@ import {
 
 const APPLICATION_MESSAGE_MIN_LENGTH = 1
 
+function ordinalDay(day) {
+  const n = Number(day)
+  const suffix =
+    n % 10 === 1 && n % 100 !== 11
+      ? 'st'
+      : n % 10 === 2 && n % 100 !== 12
+        ? 'nd'
+        : n % 10 === 3 && n % 100 !== 13
+          ? 'rd'
+          : 'th'
+  return `${n}${suffix}`
+}
+
+/** e.g. May 3rd, 2026 */
+function formatListingDetailDate(iso) {
+  if (!iso) return '—'
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return String(iso)
+  const month = date.toLocaleString('en-US', { month: 'long' })
+  const day = ordinalDay(date.getDate())
+  const year = date.getFullYear()
+  return `${month} ${day}, ${year}`
+}
+
 function categoryChipClass(category) {
   return CATEGORY_META[category]?.chipClass ?? 'chipTutoring'
 }
@@ -298,17 +322,10 @@ export function OpportunityDetail({
               </li>
             ) : null}
             <li>
-              <strong>Listing ID:</strong> <code>{posting.listing_id}</code>
+              <strong>Created:</strong> {formatListingDetailDate(posting.created_at)}
             </li>
             <li>
-              <strong>Created:</strong> {posting.created_at}
-            </li>
-            <li>
-              <strong>Updated:</strong> {posting.updated_at}
-            </li>
-            <li>
-              <strong>Posted by (user):</strong>{' '}
-              <code>{posting.created_by_user_id}</code>
+              <strong>Updated:</strong> {formatListingDetailDate(posting.updated_at)}
             </li>
           </ul>
         </section>
