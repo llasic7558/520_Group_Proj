@@ -10,6 +10,7 @@
     "start": "node --env-file=.env src/server.js",
     "test": "node --env-file=.env --test tests/*.api.test.js",
     "test:api": "node --env-file=.env --test tests/*.api.test.js",
+    "coverage": "c8 --all --include \"src/**/*.js\" --exclude \"src/server.js\" --reporter=text --reporter=lcov npm test",
     "test:load:smoke": "k6 run tests/load/smoke.js",
     "test:load:frontend": "k6 run tests/load/frontend-pages.js",
     "test:load:public": "k6 run tests/load/public-read-vus.js",
@@ -30,5 +31,8 @@
     "express": "^5.1.0",
     "node-mailjet": "^6.0.11",
     "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "c8": "^11.0.0"
   }
 }

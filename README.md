@@ -158,6 +158,25 @@ npm run build
 npm run preview   # optional: serve the built files locally
 ```
 
+**Test coverage**
+```bash
+npm run db:up
+npm run coverage
+```
+
+The coverage command runs the backend API tests with Node's built-in test runner
+and `c8`/V8 coverage, then runs the frontend tests with Vitest and
+`@vitest/coverage-v8`. The root script combines both LCOV reports and prints
+the overall line coverage percentage.
+
+Latest local coverage run:
+
+| Area | Tool | Line coverage |
+| --- | --- | --- |
+| Server | Node.js test runner + `c8` / V8 coverage | 89.55% |
+| Client | Vitest + `@vitest/coverage-v8` | 61.44% |
+| Overall | Combined LCOV line coverage | 84.00% |
+
 ---
 
 #### Free public deployment
