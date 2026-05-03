@@ -3,6 +3,20 @@ import { createListing } from '../../lib/api.js'
 import { logError, logInfo, logWarn } from '../../lib/logger.js'
 import './AddProfileProjectModal.css'
 
+/** Raw file size cap; base64 is sent as JSON so keep thumbnails reasonably small. */
+const MAX_IMAGE_BYTES = 600 * 1024
+
+const ACCEPT_IMAGE = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.onerror = () => reject(new Error('Could not read the image file.'))
+    reader.readAsDataURL(file)
+  })
+}
+
 function buildPortfolioListingPayload({
   title,
   description,
@@ -30,9 +44,10 @@ function buildPortfolioListingPayload({
 
 export default function AddProfileProjectModal({ open, onClose, onCreated }) {
   const titleId = useId()
+  const fileInputId = useId()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
+  const [imageDataUrl, setImageDataUrl] = useState('')
   const [techDraft, setTechDraft] = useState('')
   const [technologies, setTechnologies] = useState([])
   const [errorMessage, setErrorMessage] = useState('')
@@ -41,7 +56,7 @@ export default function AddProfileProjectModal({ open, onClose, onCreated }) {
   const reset = useCallback(() => {
     setTitle('')
     setDescription('')
-    setImageUrl('')
+    setImageDataUrl('')
     setTechDraft('')
     setTechnologies([])
     setErrorMessage('')
@@ -81,6 +96,44 @@ export default function AddProfileProjectModal({ open, onClose, onCreated }) {
     setTechnologies((prev) => prev.filter((t) => t !== name))
   }, [])
 
+  const handleImageFileChange = useCallback(
+    (e) => {
+      const file = e.target.files?.[0]
+      e.target.value = ''
+      if (!file) return
+
+      if (!ACCEPT_IMAGE.includes(file.type)) {
+        setErrorMessage('Please choose a JPEG, PNG, GIF, or WebP image.')
+        return
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        setErrorMessage(
+          `Image must be ${Math.round(MAX_IMAGE_BYTES / 1024)}KB or smaller.`,
+        )
+        return
+      }
+
+      void (async () => {
+        try {
+          const dataUrl = await readFileAsDataUrl(file)
+          if (!dataUrl.startsWith('data:image/')) {
+            setErrorMessage('That file could not be used as an image.')
+            return
+          }
+          setImageDataUrl(dataUrl)
+          setErrorMessage('')
+        } catch (readErr) {
+          setErrorMessage(
+            readErr instanceof Error
+              ? readErr.message
+              : 'Could not read the image file.',
+          )
+        }
+      })()
+    },
+    [],
+  )
+
   const handleSubmit = useCallback(async () => {
     if (!title.trim()) {
       logWarn('Add project blocked: title missing')
@@ -96,7 +149,7 @@ export default function AddProfileProjectModal({ open, onClose, onCreated }) {
         buildPortfolioListingPayload({
           title,
           description,
-          banner_image_url: imageUrl,
+          banner_image_url: imageDataUrl,
           technologies,
         }),
       )
@@ -114,7 +167,7 @@ export default function AddProfileProjectModal({ open, onClose, onCreated }) {
     } finally {
       setIsSubmitting(false)
     }
-  }, [description, imageUrl, onClose, onCreated, reset, technologies, title])
+  }, [description, imageDataUrl, onClose, onCreated, reset, technologies, title])
 
   if (!open) {
     return null
@@ -183,19 +236,50 @@ export default function AddProfileProjectModal({ open, onClose, onCreated }) {
             rows={4}
           />
 
-          <label className="prof-proj-modal__label" htmlFor="prof-proj-image">
-            Thumbnail image URL{' '}
+          <span className="prof-proj-modal__label" id={`${fileInputId}-cap`}>
+            Thumbnail{' '}
             <span className="prof-proj-modal__optional">(optional)</span>
-          </label>
-          <input
-            id="prof-proj-image"
-            className="prof-proj-modal__input"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="https://…"
-            inputMode="url"
-            autoComplete="off"
-          />
+          </span>
+          <div className="prof-proj-modal__upload-row">
+            <input
+              id={fileInputId}
+              type="file"
+              accept={ACCEPT_IMAGE.join(',')}
+              className="prof-proj-modal__file-native"
+              onChange={handleImageFileChange}
+              aria-labelledby={`${fileInputId}-cap`}
+            />
+            <label
+              htmlFor={fileInputId}
+              className="prof-proj-modal__btn prof-proj-modal__btn--secondary prof-proj-modal__file-pick"
+            >
+              Choose image
+            </label>
+            {imageDataUrl ? (
+              <button
+                type="button"
+                className="prof-proj-modal__btn prof-proj-modal__btn--ghost"
+                onClick={() => {
+                  setImageDataUrl('')
+                  setErrorMessage('')
+                }}
+                disabled={isSubmitting}
+              >
+                Remove
+              </button>
+            ) : null}
+          </div>
+          <p className="prof-proj-modal__hint">
+            JPEG, PNG, GIF, or WebP, up to {Math.round(MAX_IMAGE_BYTES / 1024)}
+            KB.
+          </p>
+          {imageDataUrl ? (
+            <img
+              src={imageDataUrl}
+              alt=""
+              className="prof-proj-modal__thumb-preview"
+            />
+          ) : null}
 
           <span className="prof-proj-modal__label">Technologies</span>
           <div className="prof-proj-modal__tech-row">
