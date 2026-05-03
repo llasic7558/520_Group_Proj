@@ -147,6 +147,13 @@
   background: linear-gradient(135deg, #e8e8e8, #cfcfcf);
 }
 
+.fcc-avatar__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* ——— Buttons ——— */
 .fcc-btn {
   display: inline-flex;
@@ -611,6 +618,12 @@ ul.fcc-listing-meta {
 
 .fcc-poster-card__avatar--button:disabled {
   cursor: default;
+}
+
+.fcc-poster-card__avatar--photo {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .fcc-poster-card__name {

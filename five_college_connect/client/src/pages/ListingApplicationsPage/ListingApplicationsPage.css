@@ -129,6 +129,14 @@
   cursor: default;
 }
 
+.application-card__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
 .application-card__identity {
   min-width: 0;
   flex: 1;

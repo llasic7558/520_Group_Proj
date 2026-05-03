@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ProfilePreviewModal from '../ProfilePreviewModal.jsx'
 import { closeListing, createApplication, fetchProfile } from '../../lib/api.js'
+import { resolveProfileImageUrl } from '../../lib/profileImageUrl.js'
 import { useAuth } from '../../context/AuthContext.js'
 import {
   CATEGORY_META,
@@ -118,7 +119,7 @@ export function OpportunityDetail({
       ? `mailto:${contactDetails}`
       : null
 
-  const posterImageUrl = (profile?.profile_image_url || '').trim()
+  const posterImageUrl = resolveProfileImageUrl(profile?.profile_image_url)
 
   const closeApplyModal = () => {
     if (isSubmittingApplication) return
@@ -304,7 +305,8 @@ export function OpportunityDetail({
             </li>
             {posting.expiration_date ? (
               <li>
-                <strong>Expires:</strong> {posting.expiration_date}
+                <strong>Expires:</strong>{' '}
+                {formatListingDetailDate(posting.expiration_date)}
               </li>
             ) : null}
             {posting.custom_color ? (
@@ -318,10 +320,12 @@ export function OpportunityDetail({
               </li>
             ) : null}
             <li>
-              <strong>Created:</strong> {formatListingDetailDate(posting.created_at)}
+              <strong>Created:</strong>{' '}
+              {formatListingDetailDate(posting.created_at)}
             </li>
             <li>
-              <strong>Updated:</strong> {formatListingDetailDate(posting.updated_at)}
+              <strong>Updated:</strong>{' '}
+              {formatListingDetailDate(posting.updated_at)}
             </li>
           </ul>
         </section>

@@ -57,6 +57,10 @@ export function validateProfilePayload(payload) {
   const availability = normalizeString(payload.availability);
   const lookingFor = normalizeString(payload.lookingFor || payload.looking_for);
   const profileImageUrl = normalizeString(payload.profileImageUrl || payload.profile_image_url);
+  /* Data URLs or very long URLs; keep under JSON body limit and DB safety */
+  if (profileImageUrl.length > 500_000) {
+    throw createHttpError(400, "profileImageUrl is too long");
+  }
   const skills = normalizeSkillArray(payload.skills);
   const courses = normalizeCourseArray(
     payload.courses || payload.coursesTaken || payload.courses_taken
