@@ -180,34 +180,44 @@ export function OpportunityDetail({
             </button>
           </div>
         </div>
-        <span
-          className={`fcc-category-tag fcc-category-tag--${categoryChipClass(posting.category)}`}
-        >
-          {cat.label}
-        </span>
-        <button
-          type="button"
-          className="fcc-detail__poster fcc-profile-trigger"
-          onClick={handleOwnerProfileOpen}
-          disabled={!ownerUserId || isLoadingOwnerProfile}
-        >
-          {profile?.full_name} • {profile?.college}
-        </button>
-        <div className="fcc-detail__meta">
-          <span className="fcc-meta-item fcc-meta-item--lg">
-            <IconPin />
-            {posting.location_short || '—'}
-          </span>
-          {posting.compensation_summary ? (
-            <span className="fcc-meta-item fcc-meta-item--lg">
-              <IconPay />
-              {posting.compensation_summary}
+        <div className="fcc-detail__subhead">
+          <div className="fcc-detail__subhead-line">
+            <span
+              className={`fcc-category-tag fcc-category-tag--${categoryChipClass(posting.category)}`}
+            >
+              {cat.label}
             </span>
+          </div>
+          <div className="fcc-detail__subhead-line">
+            <button
+              type="button"
+              className="fcc-detail__poster fcc-profile-trigger"
+              onClick={handleOwnerProfileOpen}
+              disabled={!ownerUserId || isLoadingOwnerProfile}
+            >
+              {profile?.full_name} • {profile?.college}
+            </button>
+          </div>
+          <div className="fcc-detail__subhead-line fcc-detail__subhead-line--meta">
+            <span className="fcc-meta-item fcc-meta-item--lg">
+              <IconPin />
+              {posting.location_short || '—'}
+            </span>
+          </div>
+          {posting.compensation_summary ? (
+            <div className="fcc-detail__subhead-line fcc-detail__subhead-line--meta">
+              <span className="fcc-meta-item fcc-meta-item--lg">
+                <IconPay />
+                {posting.compensation_summary}
+              </span>
+            </div>
           ) : null}
-          <span className="fcc-meta-item fcc-meta-item--lg">
-            <IconClock />
-            {posted}
-          </span>
+          <div className="fcc-detail__subhead-line fcc-detail__subhead-line--meta">
+            <span className="fcc-meta-item fcc-meta-item--lg">
+              <IconClock />
+              {posted}
+            </span>
+          </div>
         </div>
       </header>
 
