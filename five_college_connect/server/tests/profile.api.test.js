@@ -189,3 +189,25 @@ test("PUT /api/profiles/:userId rejects updates from a different user", async ()
 
   assert.equal(response.status, 403);
 });
+
+test("PUT /api/profiles/:userId rejects oversized profileImageUrl", async () => {
+  const response = await requestJson(`/api/profiles/${testUserId}`, {
+    method: "PUT",
+    token: testUserToken,
+    body: {
+      fullName: "Stanley Profile Test",
+      bio: "",
+      college: "UMass Amherst",
+      major: "",
+      graduationYear: null,
+      interests: "",
+      availability: "",
+      lookingFor: "",
+      profileImageUrl: "x".repeat(500_001),
+      skills: [],
+      courses: []
+    }
+  });
+
+  assert.equal(response.status, 400);
+});
