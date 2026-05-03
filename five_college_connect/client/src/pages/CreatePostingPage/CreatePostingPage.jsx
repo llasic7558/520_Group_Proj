@@ -49,7 +49,6 @@ function buildListingPayload(form, status) {
     category: form.category,
     contact_method: form.contact_method,
     contact_details: form.contact_details.trim(),
-    banner_image_url: form.banner_image_url.trim() || null,
     custom_color: form.custom_color.trim() || null,
     status,
     expiration_date: form.expiration_date.trim() || null,
@@ -99,7 +98,6 @@ export default function CreatePostingPage() {
     email_notifications: true,
     auto_close_applications: false,
     expiration_date: '',
-    banner_image_url: '',
     custom_color: '',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -379,33 +377,18 @@ export default function CreatePostingPage() {
             </div>
           )}
 
-          <div className="cp-row-2">
-            <div className="cp-field">
-              <label className="cp-label" htmlFor="listing-expires">
-                Expiration date (optional)
-              </label>
-              <input
-                id="listing-expires"
-                className="cp-input"
-                type="date"
-                name="expiration_date"
-                value={form.expiration_date}
-                onChange={(e) => setField('expiration_date', e.target.value)}
-              />
-            </div>
-            <div className="cp-field">
-              <label className="cp-label" htmlFor="listing-banner">
-                Banner image URL (optional)
-              </label>
-              <input
-                id="listing-banner"
-                className="cp-input"
-                name="banner_image_url"
-                value={form.banner_image_url}
-                onChange={(e) => setField('banner_image_url', e.target.value)}
-                placeholder="https://…"
-              />
-            </div>
+          <div className="cp-field">
+            <label className="cp-label" htmlFor="listing-expires">
+              Expiration date (optional)
+            </label>
+            <input
+              id="listing-expires"
+              className="cp-input"
+              type="date"
+              name="expiration_date"
+              value={form.expiration_date}
+              onChange={(e) => setField('expiration_date', e.target.value)}
+            />
           </div>
 
           <div className="cp-field">
@@ -468,7 +451,6 @@ export default function CreatePostingPage() {
             <ul className="cp-tips">
               <li>Use clear, descriptive titles</li>
               <li>Include specific requirements</li>
-              <li>Add an engaging banner image</li>
               <li>Respond to applicants promptly</li>
             </ul>
           </section>

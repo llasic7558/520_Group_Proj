@@ -437,6 +437,22 @@ a.fcc-btn {
   color: var(--fcc-text);
 }
 
+.fcc-detail__subhead {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.fcc-detail__subhead-line {
+  width: 100%;
+}
+
+.fcc-detail__subhead-line--meta .fcc-meta-item {
+  display: inline-flex;
+}
+
 .fcc-detail__actions {
   display: flex;
   gap: 4px;
@@ -444,7 +460,7 @@ a.fcc-btn {
 
 .fcc-detail__poster {
   display: inline-flex;
-  margin: 8px 0 14px;
+  margin: 0;
   padding: 0;
   border: none;
   background: transparent;
@@ -464,12 +480,6 @@ a.fcc-btn {
 .fcc-detail__poster:disabled,
 .fcc-profile-trigger:disabled {
   cursor: default;
-}
-
-.fcc-detail__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 20px;
 }
 
 .fcc-detail__sections {
@@ -586,6 +596,12 @@ ul.fcc-listing-meta {
   border-radius: 50%;
   background: linear-gradient(135deg, #ddd, #bbb);
   flex-shrink: 0;
+}
+
+.fcc-poster-card__avatar--photo {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .fcc-poster-card__avatar--button {

@@ -24,6 +24,30 @@ import {
 
 const APPLICATION_MESSAGE_MIN_LENGTH = 1
 
+function ordinalDay(day) {
+  const n = Number(day)
+  const suffix =
+    n % 10 === 1 && n % 100 !== 11
+      ? 'st'
+      : n % 10 === 2 && n % 100 !== 12
+        ? 'nd'
+        : n % 10 === 3 && n % 100 !== 13
+          ? 'rd'
+          : 'th'
+  return `${n}${suffix}`
+}
+
+/** e.g. May 3rd, 2026 */
+function formatListingDetailDate(iso) {
+  if (!iso) return '—'
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return String(iso)
+  const month = date.toLocaleString('en-US', { month: 'long' })
+  const day = ordinalDay(date.getDate())
+  const year = date.getFullYear()
+  return `${month} ${day}, ${year}`
+}
+
 function categoryChipClass(category) {
   return CATEGORY_META[category]?.chipClass ?? 'chipTutoring'
 }
@@ -93,6 +117,8 @@ export function OpportunityDetail({
     contactMethod === 'email' && contactDetails
       ? `mailto:${contactDetails}`
       : null
+
+  const posterImageUrl = (profile?.profile_image_url || '').trim()
 
   const closeApplyModal = () => {
     if (isSubmittingApplication) return
@@ -180,34 +206,44 @@ export function OpportunityDetail({
             </button>
           </div>
         </div>
-        <span
-          className={`fcc-category-tag fcc-category-tag--${categoryChipClass(posting.category)}`}
-        >
-          {cat.label}
-        </span>
-        <button
-          type="button"
-          className="fcc-detail__poster fcc-profile-trigger"
-          onClick={handleOwnerProfileOpen}
-          disabled={!ownerUserId || isLoadingOwnerProfile}
-        >
-          {profile?.full_name} • {profile?.college}
-        </button>
-        <div className="fcc-detail__meta">
-          <span className="fcc-meta-item fcc-meta-item--lg">
-            <IconPin />
-            {posting.location_short || '—'}
-          </span>
-          {posting.compensation_summary ? (
-            <span className="fcc-meta-item fcc-meta-item--lg">
-              <IconPay />
-              {posting.compensation_summary}
+        <div className="fcc-detail__subhead">
+          <div className="fcc-detail__subhead-line">
+            <span
+              className={`fcc-category-tag fcc-category-tag--${categoryChipClass(posting.category)}`}
+            >
+              {cat.label}
             </span>
+          </div>
+          <div className="fcc-detail__subhead-line">
+            <button
+              type="button"
+              className="fcc-detail__poster fcc-profile-trigger"
+              onClick={handleOwnerProfileOpen}
+              disabled={!ownerUserId || isLoadingOwnerProfile}
+            >
+              {profile?.full_name} • {profile?.college}
+            </button>
+          </div>
+          <div className="fcc-detail__subhead-line fcc-detail__subhead-line--meta">
+            <span className="fcc-meta-item fcc-meta-item--lg">
+              <IconPin />
+              {posting.location_short || '—'}
+            </span>
+          </div>
+          {posting.compensation_summary ? (
+            <div className="fcc-detail__subhead-line fcc-detail__subhead-line--meta">
+              <span className="fcc-meta-item fcc-meta-item--lg">
+                <IconPay />
+                {posting.compensation_summary}
+              </span>
+            </div>
           ) : null}
-          <span className="fcc-meta-item fcc-meta-item--lg">
-            <IconClock />
-            {posted}
-          </span>
+          <div className="fcc-detail__subhead-line fcc-detail__subhead-line--meta">
+            <span className="fcc-meta-item fcc-meta-item--lg">
+              <IconClock />
+              {posted}
+            </span>
+          </div>
         </div>
       </header>
 
@@ -271,12 +307,6 @@ export function OpportunityDetail({
                 <strong>Expires:</strong> {posting.expiration_date}
               </li>
             ) : null}
-            {posting.banner_image_url ? (
-              <li>
-                <strong>Banner:</strong>{' '}
-                <a href={posting.banner_image_url}>View image</a>
-              </li>
-            ) : null}
             {posting.custom_color ? (
               <li>
                 <strong>Accent:</strong>{' '}
@@ -288,17 +318,10 @@ export function OpportunityDetail({
               </li>
             ) : null}
             <li>
-              <strong>Listing ID:</strong> <code>{posting.listing_id}</code>
+              <strong>Created:</strong> {formatListingDetailDate(posting.created_at)}
             </li>
             <li>
-              <strong>Created:</strong> {posting.created_at}
-            </li>
-            <li>
-              <strong>Updated:</strong> {posting.updated_at}
-            </li>
-            <li>
-              <strong>Posted by (user):</strong>{' '}
-              <code>{posting.created_by_user_id}</code>
+              <strong>Updated:</strong> {formatListingDetailDate(posting.updated_at)}
             </li>
           </ul>
         </section>
@@ -308,10 +331,21 @@ export function OpportunityDetail({
           <div className="fcc-poster-card">
             <button
               type="button"
-              className="fcc-poster-card__avatar fcc-poster-card__avatar--button"
+              className={
+                posterImageUrl
+                  ? 'fcc-poster-card__avatar fcc-poster-card__avatar--button fcc-poster-card__avatar--photo'
+                  : 'fcc-poster-card__avatar fcc-poster-card__avatar--button'
+              }
               aria-label={`View ${profile?.full_name || 'poster'} profile`}
               onClick={handleOwnerProfileOpen}
               disabled={!ownerUserId || isLoadingOwnerProfile}
+              style={
+                posterImageUrl
+                  ? {
+                      backgroundImage: `url(${JSON.stringify(posterImageUrl)})`,
+                    }
+                  : undefined
+              }
             />
             <div className="fcc-poster-card__info">
               <button

@@ -21,7 +21,6 @@ function normalizeListing(listing) {
     category: String(listing?.category || '').toLowerCase(),
     contact_method: listing?.contactMethod ?? '',
     contact_details: listing?.contactDetails ?? '',
-    banner_image_url: listing?.bannerImageUrl || null,
     custom_color: listing?.customColor || null,
     status: listing?.status ?? '',
     expiration_date: listing?.expirationDate ?? null,
