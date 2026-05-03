@@ -10,6 +10,7 @@ export function createAuthValue(overrides = {}) {
     isAuthenticated: false,
     login: vi.fn(),
     signup: vi.fn(),
+    updateUser: vi.fn(),
     logout: vi.fn(),
     ...overrides,
   }

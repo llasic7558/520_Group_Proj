@@ -68,6 +68,27 @@ Option 2:
 npm --prefix five_college_connect/server test
 ```
 
+## Run coverage
+
+From the repo root:
+
+```bash
+npm run db:up
+npm run coverage
+```
+
+This runs backend API coverage with Node.js test runner + `c8` / V8 coverage,
+then frontend coverage with Vitest + `@vitest/coverage-v8`, and prints the
+combined overall line coverage.
+
+Latest local coverage run:
+
+| Area | Tool | Line coverage |
+| --- | --- | --- |
+| Server | Node.js test runner + `c8` / V8 coverage | 89.55% |
+| Client | Vitest + `@vitest/coverage-v8` | 61.44% |
+| Overall | Combined LCOV line coverage | 84.00% |
+
 ## Run load tests
 
 The load tests live in [load/README.md](./load/README.md).
