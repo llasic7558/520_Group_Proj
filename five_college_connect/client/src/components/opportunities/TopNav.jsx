@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext.js'
+import { resolveProfileImageUrl } from '../../lib/profileImageUrl.js'
 import {
   IconBell,
   IconPlus,
@@ -12,6 +14,8 @@ export function TopNav({
   searchValue,
   onSearchChange,
 }) {
+  const { user } = useAuth()
+  const avatarSrc = resolveProfileImageUrl(user?.profileImageUrl)
   const searchInputProps = onSearchChange
     ? {
         value: searchValue ?? '',
@@ -58,7 +62,16 @@ export function TopNav({
           className="fcc-avatar"
           aria-label="My profile"
         >
-          <span className="fcc-avatar__placeholder" />
+          {avatarSrc ? (
+            <img
+              src={avatarSrc}
+              alt=""
+              className="fcc-avatar__img"
+              decoding="async"
+            />
+          ) : (
+            <span className="fcc-avatar__placeholder" />
+          )}
         </Link>
       </div>
     </header>

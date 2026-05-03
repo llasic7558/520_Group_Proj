@@ -147,6 +147,13 @@
   background: linear-gradient(135deg, #e8e8e8, #cfcfcf);
 }
 
+.fcc-avatar__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* ——— Buttons ——— */
 .fcc-btn {
   display: inline-flex;

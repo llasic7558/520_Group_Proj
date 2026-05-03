@@ -12,6 +12,17 @@ import { logError, logInfo } from '../lib/logger.js'
 import { setWelcomeFlag } from '../lib/welcomeFlag.js'
 import { AuthContext } from './AuthContext.js'
 
+function snapshotProfileImageUrl(profile) {
+  if (!profile || typeof profile !== 'object') return ''
+  const url = profile.profileImageUrl ?? profile.profile_image_url ?? ''
+  return typeof url === 'string' ? url.trim() : ''
+}
+
+function userWithStoredAvatar(user, profile) {
+  if (!user) return user
+  return { ...user, profileImageUrl: snapshotProfileImageUrl(profile) }
+}
+
 // Builds the full backend signup payload from the wizard's form state.
 // Everything the wizard doesn't collect is left empty so the user can
 // fill it in later from the Profile page.
@@ -61,12 +72,13 @@ export function AuthProvider({ children }) {
           method: 'POST',
           body: { email, password },
         })
-        persistAuth(result.authToken, result.user)
+        const nextUser = userWithStoredAvatar(result.user, result.profile)
+        persistAuth(result.authToken, nextUser)
         logInfo('User signed in', {
           userId: result.user?.id,
           email: result.user?.email,
         })
-        return result.user
+        return nextUser
       } catch (error) {
         logError('Sign-in failed', {
           email,
@@ -85,13 +97,14 @@ export function AuthProvider({ children }) {
           method: 'POST',
           body: buildSignupPayload(form),
         })
-        persistAuth(result.authToken, result.user)
+        const nextUser = userWithStoredAvatar(result.user, result.profile)
+        persistAuth(result.authToken, nextUser)
         setWelcomeFlag()
         logInfo('User signed up', {
           userId: result.user?.id,
           email: result.user?.email,
         })
-        return result.user
+        return nextUser
       } catch (error) {
         logError('Sign-up failed', {
           email: form?.email,

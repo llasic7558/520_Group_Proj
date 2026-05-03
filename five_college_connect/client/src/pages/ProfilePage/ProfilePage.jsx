@@ -11,6 +11,7 @@ import {
   reopenListing,
   updateProfile,
 } from '../../lib/api.js'
+import { getUser } from '../../lib/authStorage.js'
 import AddProfileProjectModal from '../../components/profile/AddProfileProjectModal.jsx'
 import { TopNav } from '../../components/opportunities/TopNav.jsx'
 import {
@@ -22,6 +23,7 @@ import {
   IconVerified,
 } from '../../components/opportunities/Icons.jsx'
 import { logError, logInfo, logWarn } from '../../lib/logger.js'
+import { resolveProfileImageUrl } from '../../lib/profileImageUrl.js'
 import '../OpportunitiesPage/OpportunitiesPage.css'
 import './ProfilePage.css'
 
@@ -353,7 +355,7 @@ function buildRecentActivity({ listings, applications, listingTitles }) {
 }
 
 export default function ProfilePage() {
-  const { user } = useAuth()
+  const { user, updateUser } = useAuth()
   const [profile, setProfile] = useState(null)
   const [ownedListings, setOwnedListings] = useState([])
   const [appliedApplications, setAppliedApplications] = useState([])
@@ -412,7 +414,15 @@ export default function ProfilePage() {
         if (ignore) return
 
         if (profileResult.status === 'fulfilled') {
-          setProfile(normalizeProfile(profileResult.value))
+          const normalized = normalizeProfile(profileResult.value)
+          setProfile(normalized)
+          const stored = getUser()
+          if (stored?.id === user.id) {
+            updateUser({
+              ...stored,
+              profileImageUrl: (normalized.profile_image_url || '').trim(),
+            })
+          }
           logInfo('Profile loaded', {
             userId: user.id,
           })
@@ -543,7 +553,7 @@ export default function ProfilePage() {
     return () => {
       ignore = true
     }
-  }, [user?.id])
+  }, [user?.id, updateUser])
 
   function startEdit() {
     if (!profile) return
@@ -787,6 +797,13 @@ export default function ProfilePage() {
         buildProfilePayload(draft),
       )
       setProfile(normalizeProfile(savedProfile))
+      const stored = getUser()
+      if (stored) {
+        updateUser({
+          ...stored,
+          profileImageUrl: (savedProfile.profileImageUrl ?? '').trim(),
+        })
+      }
       logInfo('Profile updated', {
         userId: user.id,
         skillCount: draft.skills.length,
@@ -824,7 +841,7 @@ export default function ProfilePage() {
         )[0]
       : null
 
-  const profilePhotoSrc = (display.profile_image_url || '').trim()
+  const profilePhotoSrc = resolveProfileImageUrl(display.profile_image_url)
 
   return (
     <div className="prof-app">
