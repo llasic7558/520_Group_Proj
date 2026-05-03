@@ -307,12 +307,6 @@ export function OpportunityDetail({
                 <strong>Expires:</strong> {posting.expiration_date}
               </li>
             ) : null}
-            {posting.banner_image_url ? (
-              <li>
-                <strong>Banner:</strong>{' '}
-                <a href={posting.banner_image_url}>View image</a>
-              </li>
-            ) : null}
             {posting.custom_color ? (
               <li>
                 <strong>Accent:</strong>{' '}
