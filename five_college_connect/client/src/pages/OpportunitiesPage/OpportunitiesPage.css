@@ -598,6 +598,12 @@ ul.fcc-listing-meta {
   flex-shrink: 0;
 }
 
+.fcc-poster-card__avatar--photo {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 .fcc-poster-card__avatar--button {
   border: none;
   cursor: pointer;

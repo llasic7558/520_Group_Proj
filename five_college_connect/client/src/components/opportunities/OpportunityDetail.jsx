@@ -118,6 +118,8 @@ export function OpportunityDetail({
       ? `mailto:${contactDetails}`
       : null
 
+  const posterImageUrl = (profile?.profile_image_url || '').trim()
+
   const closeApplyModal = () => {
     if (isSubmittingApplication) return
     setIsApplyModalOpen(false)
@@ -335,10 +337,21 @@ export function OpportunityDetail({
           <div className="fcc-poster-card">
             <button
               type="button"
-              className="fcc-poster-card__avatar fcc-poster-card__avatar--button"
+              className={
+                posterImageUrl
+                  ? 'fcc-poster-card__avatar fcc-poster-card__avatar--button fcc-poster-card__avatar--photo'
+                  : 'fcc-poster-card__avatar fcc-poster-card__avatar--button'
+              }
               aria-label={`View ${profile?.full_name || 'poster'} profile`}
               onClick={handleOwnerProfileOpen}
               disabled={!ownerUserId || isLoadingOwnerProfile}
+              style={
+                posterImageUrl
+                  ? {
+                      backgroundImage: `url(${JSON.stringify(posterImageUrl)})`,
+                    }
+                  : undefined
+              }
             />
             <div className="fcc-poster-card__info">
               <button
