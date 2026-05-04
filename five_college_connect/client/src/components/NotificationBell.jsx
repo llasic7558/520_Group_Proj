@@ -1,5 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { IconBell } from './opportunities/Icons.jsx'
+import { useAuth } from '../context/AuthContext.js'
+import {
+  fetchNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+} from '../lib/api.js'
 import './NotificationBell.css'
 
 function formatNotificationTime(value) {
@@ -40,15 +46,49 @@ export default function NotificationBell({
   buttonClassName = 'fcc-icon-btn',
   initialNotifications = [],
 }) {
+  const { user } = useAuth()
   const rootRef = useRef(null)
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState(initialNotifications)
-
-  const unreadCount = useMemo(
-    () => notifications.filter((notification) => !notification.isRead).length,
-    [notifications],
+  const [unreadCount, setUnreadCount] = useState(
+    () => initialNotifications.filter((notification) => !notification.isRead).length,
   )
-  const visibleUnreadCount = unreadCount > 99 ? '99+' : String(unreadCount)
+  const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [updatingNotificationId, setUpdatingNotificationId] = useState('')
+  const [isMarkingAllRead, setIsMarkingAllRead] = useState(false)
+
+  const visibleUnreadCount = useMemo(
+    () => (unreadCount > 99 ? '99+' : String(unreadCount)),
+    [unreadCount],
+  )
+
+  const loadNotifications = useCallback(async () => {
+    if (!user?.id) return
+
+    setIsLoading(true)
+    setErrorMessage('')
+
+    try {
+      const payload = await fetchNotifications({ limit: 20 })
+      setNotifications(payload.items)
+      setUnreadCount(payload.unreadCount)
+    } catch (err) {
+      setErrorMessage(err?.message || 'Could not load notifications.')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!user?.id) {
+      setNotifications([])
+      setUnreadCount(0)
+      return
+    }
+
+    loadNotifications()
+  }, [loadNotifications, user?.id])
 
   useEffect(() => {
     if (!isOpen) return undefined
@@ -74,20 +114,55 @@ export default function NotificationBell({
     }
   }, [isOpen])
 
-  function handleNotificationClick(notificationId) {
-    setNotifications((current) =>
-      current.map((notification) =>
-        notification.notificationId === notificationId
-          ? { ...notification, isRead: true }
-          : notification,
-      ),
-    )
+  async function handleToggle() {
+    const nextOpen = !isOpen
+    setIsOpen(nextOpen)
+
+    if (nextOpen && user?.id && notifications.length === 0) {
+      await loadNotifications()
+    }
   }
 
-  function handleMarkAllRead() {
-    setNotifications((current) =>
-      current.map((notification) => ({ ...notification, isRead: true })),
-    )
+  async function handleNotificationClick(notification) {
+    if (notification.isRead) return
+
+    setUpdatingNotificationId(notification.notificationId)
+    setErrorMessage('')
+
+    try {
+      const updatedNotification = await markNotificationAsRead(
+        notification.notificationId,
+      )
+      setNotifications((current) =>
+        current.map((item) =>
+          item.notificationId === notification.notificationId
+            ? { ...item, ...updatedNotification, isRead: true }
+            : item,
+        ),
+      )
+      setUnreadCount((current) => Math.max(0, current - 1))
+    } catch (err) {
+      setErrorMessage(err?.message || 'Could not mark notification as read.')
+    } finally {
+      setUpdatingNotificationId('')
+    }
+  }
+
+  async function handleMarkAllRead() {
+    setIsMarkingAllRead(true)
+    setErrorMessage('')
+
+    try {
+      await markAllNotificationsAsRead()
+      setNotifications((current) =>
+        current.map((notification) => ({ ...notification, isRead: true })),
+      )
+      setUnreadCount(0)
+    } catch (err) {
+      setErrorMessage(err?.message || 'Could not mark notifications as read.')
+    } finally {
+      setIsMarkingAllRead(false)
+    }
   }
 
   return (
@@ -102,7 +177,7 @@ export default function NotificationBell({
         }
         aria-haspopup="dialog"
         aria-expanded={isOpen}
-        onClick={() => setIsOpen((current) => !current)}
+        onClick={handleToggle}
       >
         <IconBell />
         {unreadCount > 0 ? (
@@ -127,18 +202,29 @@ export default function NotificationBell({
               type="button"
               className="fcc-notification-panel__mark-all"
               onClick={handleMarkAllRead}
-              disabled={unreadCount === 0}
+              disabled={unreadCount === 0 || isMarkingAllRead}
             >
-              Mark all read
+              {isMarkingAllRead ? 'Marking...' : 'Mark all read'}
             </button>
           </div>
 
           <div className="fcc-notification-panel__body">
-            {notifications.length === 0 ? (
+            {isLoading ? (
+              <p className="fcc-notification-panel__state">
+                Loading notifications...
+              </p>
+            ) : errorMessage ? (
+              <div className="fcc-notification-panel__state" role="alert">
+                <p>{errorMessage}</p>
+                <button type="button" onClick={loadNotifications}>
+                  Try again
+                </button>
+              </div>
+            ) : notifications.length === 0 ? (
               <div className="fcc-notification-panel__empty">
                 <span aria-hidden>✓</span>
                 <p>No new notifications</p>
-                <small>Application alerts will appear here soon.</small>
+                <small>You are all caught up.</small>
               </div>
             ) : (
               <ul className="fcc-notification-list">
@@ -153,8 +239,9 @@ export default function NotificationBell({
                             ? 'fcc-notification-item fcc-notification-item--unread'
                             : 'fcc-notification-item'
                         }
-                        onClick={() =>
-                          handleNotificationClick(notification.notificationId)
+                        onClick={() => handleNotificationClick(notification)}
+                        disabled={
+                          updatingNotificationId === notification.notificationId
                         }
                       >
                         <span className="fcc-notification-item__dot" aria-hidden />
@@ -167,7 +254,7 @@ export default function NotificationBell({
                             {notification.message}
                           </span>
                           <span className="fcc-notification-item__action">
-                            View applications
+                            {isUnread ? 'Mark as read' : 'Read'}
                           </span>
                         </span>
                       </button>

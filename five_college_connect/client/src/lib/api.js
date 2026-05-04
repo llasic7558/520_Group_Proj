@@ -185,6 +185,30 @@ export async function updateApplicationStatus(applicationId, status) {
   return payload?.application ?? null
 }
 
+export async function fetchNotifications(filters = {}) {
+  const payload = await apiRequest(
+    `/api/notifications${buildQueryString(filters)}`,
+  )
+
+  return {
+    items: payload?.items ?? [],
+    unreadCount: payload?.unreadCount ?? 0,
+  }
+}
+
+export async function markNotificationAsRead(notificationId) {
+  const payload = await apiRequest(`/api/notifications/${notificationId}/read`, {
+    method: 'PATCH',
+  })
+  return payload?.notification ?? null
+}
+
+export async function markAllNotificationsAsRead() {
+  return apiRequest('/api/notifications/read-all', {
+    method: 'PATCH',
+  })
+}
+
 export async function fetchProfile(userId) {
   const payload = await apiRequest(`/api/profiles/${userId}`)
   return payload?.profile ?? null
