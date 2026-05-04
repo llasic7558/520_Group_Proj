@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
+import NotificationBell from '../NotificationBell.jsx'
 import { useAuth } from '../../context/AuthContext.js'
 import { resolveProfileImageUrl } from '../../lib/profileImageUrl.js'
 import {
-  IconBell,
   IconPlus,
   IconSearch,
   LogoCap,
@@ -54,9 +54,7 @@ export function TopNav({
           <IconPlus />
           Create Posting
         </Link>
-        <button type="button" className="fcc-icon-btn" aria-label="Notifications">
-          <IconBell />
-        </button>
+        <NotificationBell />
         <Link
           to="/profile"
           className="fcc-avatar"

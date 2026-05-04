@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import NotificationBell from '../../components/NotificationBell.jsx'
 import {
-  IconBell,
   IconBook,
   IconBriefcase,
   IconCode,
@@ -182,9 +182,7 @@ export default function CreatePostingPage() {
           >
             {isSubmitting ? 'Publishing...' : 'Publish'}
           </button>
-          <button type="button" className="cp-icon-btn" aria-label="Notifications">
-            <IconBell />
-          </button>
+          <NotificationBell buttonClassName="cp-icon-btn" />
           <Link to="/profile" className="cp-avatar" aria-label="My profile">
             {navAvatarSrc ? (
               <img
