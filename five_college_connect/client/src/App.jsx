@@ -44,6 +44,14 @@ export default function App() {
           }
         />
         <Route
+          path="/postings/:listingId/edit"
+          element={
+            <ProtectedRoute>
+              <CreatePostingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/postings/:listingId/applications"
           element={
             <ProtectedRoute>

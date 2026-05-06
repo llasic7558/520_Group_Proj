@@ -68,6 +68,10 @@ export class ListingService {
 
       ensureOwnerOrAdmin(currentUser, existingListing.createdByUserId, "listing");
 
+      if (existingListing.status === "closed") {
+        throw createHttpError(409, "Closed listings cannot be edited. Reopen the listing first.");
+      }
+
       const updatedListing = await this.listingRepository.updateListing(listingId, payload, client);
       return this.buildListingDetails(updatedListing, payload, client, true);
     });

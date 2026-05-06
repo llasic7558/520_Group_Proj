@@ -1261,18 +1261,30 @@ export default function ProfilePage() {
                         {openListingMenuId === listing.listingId ? (
                           <div className="prof-listing-card__menu-popover">
                             {isOpen ? (
-                              <button
-                                type="button"
-                                className="prof-listing-card__menu-item"
-                                onClick={() => {
-                                  setListingActionError('')
-                                  setListingToClose(listing)
-                                  setOpenListingMenuId(null)
-                                }}
-                                disabled={isClosing}
-                              >
-                                {isClosing ? 'Closing...' : 'Close listing'}
-                              </button>
+                              <>
+                                <Link
+                                  className="prof-listing-card__menu-item"
+                                  to={`/postings/${listing.listingId}/edit`}
+                                  onClick={() => {
+                                    setListingActionError('')
+                                    setOpenListingMenuId(null)
+                                  }}
+                                >
+                                  Edit listing
+                                </Link>
+                                <button
+                                  type="button"
+                                  className="prof-listing-card__menu-item"
+                                  onClick={() => {
+                                    setListingActionError('')
+                                    setListingToClose(listing)
+                                    setOpenListingMenuId(null)
+                                  }}
+                                  disabled={isClosing}
+                                >
+                                  {isClosing ? 'Closing...' : 'Close listing'}
+                                </button>
+                              </>
                             ) : (
                               <button
                                 type="button"

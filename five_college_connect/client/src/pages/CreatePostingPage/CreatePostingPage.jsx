@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   IconBell,
   IconBook,
@@ -10,7 +10,7 @@ import {
   IconPin,
   LogoCap,
 } from '../../components/opportunities/Icons.jsx'
-import { createListing } from '../../lib/api.js'
+import { createListing, fetchListing, updateListing } from '../../lib/api.js'
 import { logError, logInfo, logWarn } from '../../lib/logger.js'
 import './CreatePostingPage.css'
 
@@ -62,6 +62,55 @@ function buildListingPayload(form, status) {
   }
 }
 
+function createInitialForm() {
+  return {
+    title: '',
+    description: '',
+    category: 'tutoring',
+    compensation_amount: '',
+    compensation_frequency: '/hour',
+    location: '',
+    contact_method: 'profile',
+    contact_details: '',
+    required_skills: [],
+    skillDraft: '',
+    require_full_profile: true,
+    email_notifications: true,
+    auto_close_applications: false,
+    expiration_date: '',
+    banner_image_url: '',
+    custom_color: '',
+    status: 'open',
+  }
+}
+
+function dateInputValue(value) {
+  if (!value) return ''
+  return String(value).slice(0, 10)
+}
+
+function formFromListing(listing) {
+  const skills = Array.isArray(listing?.skills) ? listing.skills : []
+
+  return {
+    ...createInitialForm(),
+    title: listing?.title || '',
+    description: listing?.description || '',
+    category: String(listing?.category || 'tutoring').toLowerCase(),
+    contact_method: listing?.contactMethod || listing?.contact_method || 'profile',
+    contact_details: listing?.contactDetails || listing?.contact_details || '',
+    required_skills: skills
+      .map((skill) => skill?.name || skill?.skill_name)
+      .filter(Boolean),
+    expiration_date: dateInputValue(
+      listing?.expirationDate || listing?.expiration_date,
+    ),
+    banner_image_url: listing?.bannerImageUrl || listing?.banner_image_url || '',
+    custom_color: listing?.customColor || listing?.custom_color || '',
+    status: String(listing?.status || 'open').toLowerCase(),
+  }
+}
+
 // little switch row used in the sidebar card
 function ToggleRow({ id, label, checked, onChange }) {
   return (
@@ -83,27 +132,53 @@ function ToggleRow({ id, label, checked, onChange }) {
 
 export default function CreatePostingPage() {
   const navigate = useNavigate()
+  const { listingId } = useParams()
+  const isEditingListing = Boolean(listingId)
   // one big object is easier than a million usestates
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    category: 'tutoring',
-    compensation_amount: '',
-    compensation_frequency: '/hour',
-    location: '',
-    contact_method: 'profile',
-    contact_details: '',
-    required_skills: [],
-    skillDraft: '',
-    require_full_profile: true,
-    email_notifications: true,
-    auto_close_applications: false,
-    expiration_date: '',
-    banner_image_url: '',
-    custom_color: '',
-  })
+  const [form, setForm] = useState(() => createInitialForm())
+  const [isLoadingListing, setIsLoadingListing] = useState(isEditingListing)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const isClosedEdit = isEditingListing && !isLoadingListing && form.status !== 'open'
+
+  useEffect(() => {
+    if (!listingId) {
+      setForm(createInitialForm())
+      setIsLoadingListing(false)
+      return
+    }
+
+    let ignore = false
+    setIsLoadingListing(true)
+    setErrorMessage('')
+
+    async function loadListing() {
+      try {
+        const listing = await fetchListing(listingId)
+        if (!ignore) {
+          setForm(formFromListing(listing))
+        }
+      } catch (err) {
+        if (!ignore) {
+          logError('Listing edit load failed', {
+            listingId,
+            error: err instanceof Error ? err.message : String(err),
+          })
+          setErrorMessage(err?.message || 'Could not load this listing.')
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingListing(false)
+        }
+      }
+    }
+
+    loadListing()
+
+    return () => {
+      ignore = true
+    }
+  }, [listingId])
 
   // generic field writer so inputs dont need 20 handlers
   const setField = useCallback((key, value) => {
@@ -130,10 +205,19 @@ export default function CreatePostingPage() {
     }))
   }, [])
 
-  const handlePublish = useCallback(async () => {
+  const handleSubmit = useCallback(async () => {
     if (!form.title.trim()) {
-      logWarn('Listing publish blocked because title is missing')
-      setErrorMessage('A title is required before publishing.')
+      logWarn('Listing save blocked because title is missing', {
+        mode: isEditingListing ? 'edit' : 'create',
+      })
+      setErrorMessage(
+        `A title is required before ${isEditingListing ? 'updating' : 'publishing'}.`,
+      )
+      return
+    }
+
+    if (isClosedEdit) {
+      setErrorMessage('Closed listings cannot be edited. Reopen the listing first.')
       return
     }
 
@@ -141,22 +225,34 @@ export default function CreatePostingPage() {
     setErrorMessage('')
 
     try {
-      const listing = await createListing(buildListingPayload(form, 'open'))
-      logInfo('Listing published from create page', {
+      const payload = buildListingPayload(
+        form,
+        isEditingListing ? form.status || 'open' : 'open',
+      )
+      const listing = isEditingListing
+        ? await updateListing(listingId, payload)
+        : await createListing(payload)
+      logInfo(isEditingListing ? 'Listing updated from edit page' : 'Listing published from create page', {
         listingId: listing?.listingId,
         category: form.category,
       })
-      navigate('/opportunities', { replace: true })
+      navigate(isEditingListing ? '/profile#my-listings' : '/opportunities', {
+        replace: true,
+      })
     } catch (err) {
-      logError('Listing publish failed', {
+      logError(isEditingListing ? 'Listing update failed' : 'Listing publish failed', {
+        listingId,
         category: form.category,
         error: err instanceof Error ? err.message : String(err),
       })
-      setErrorMessage(err?.message || 'Could not publish the listing.')
+      setErrorMessage(
+        err?.message ||
+          `Could not ${isEditingListing ? 'update' : 'publish'} the listing.`,
+      )
     } finally {
       setIsSubmitting(false)
     }
-  }, [form, navigate])
+  }, [form, isClosedEdit, isEditingListing, listingId, navigate])
 
   // teaser text in the preview card on the right
   const previewSnippet =
@@ -175,10 +271,16 @@ export default function CreatePostingPage() {
           <button
             type="button"
             className="cp-btn cp-btn--primary"
-            onClick={handlePublish}
-            disabled={isSubmitting}
+            onClick={handleSubmit}
+            disabled={isSubmitting || isLoadingListing || isClosedEdit}
           >
-            {isSubmitting ? 'Publishing...' : 'Publish'}
+            {isSubmitting
+              ? isEditingListing
+                ? 'Updating...'
+                : 'Publishing...'
+              : isEditingListing
+                ? 'Update'
+                : 'Publish'}
           </button>
           <button type="button" className="cp-icon-btn" aria-label="Notifications">
             <IconBell />
@@ -192,6 +294,36 @@ export default function CreatePostingPage() {
       {/* left = form, right = preview + toggles */}
       <div className="cp-shell">
         <div className="cp-form-col">
+          {isLoadingListing ? (
+            <p
+              role="status"
+              style={{
+                color: '#374151',
+                background: '#f3f4f6',
+                border: '1px solid #e5e7eb',
+                padding: '0.75rem 1rem',
+                borderRadius: 12,
+                marginBottom: '1rem',
+              }}
+            >
+              Loading listing...
+            </p>
+          ) : null}
+          {isClosedEdit ? (
+            <p
+              role="alert"
+              style={{
+                color: '#92400e',
+                background: '#fffbeb',
+                border: '1px solid #fcd34d',
+                padding: '0.75rem 1rem',
+                borderRadius: 12,
+                marginBottom: '1rem',
+              }}
+            >
+              Closed listings cannot be edited. Reopen the listing first.
+            </p>
+          ) : null}
           {errorMessage ? (
             <p
               role="alert"

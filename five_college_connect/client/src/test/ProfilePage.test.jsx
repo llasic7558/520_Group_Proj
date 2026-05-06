@@ -103,8 +103,8 @@ describe('ProfilePage', () => {
       }),
     })
 
-    expect(await screen.findByText('Project Showcase')).toBeInTheDocument()
-    expect(screen.getByText('A real project posting.')).toBeInTheDocument()
+    expect(await screen.findAllByText('Project Showcase')).toHaveLength(2)
+    expect(screen.getAllByText('A real project posting.')).toHaveLength(2)
     expect(screen.getByText('My Applications')).toBeInTheDocument()
     expect(screen.getByText('Research Assistant')).toBeInTheDocument()
     expect(screen.getByText('pending')).toBeInTheDocument()
