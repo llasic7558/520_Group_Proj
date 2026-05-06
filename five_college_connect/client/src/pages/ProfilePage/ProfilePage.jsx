@@ -86,6 +86,8 @@ function createDraftCourse() {
 }
 
 function normalizeProfile(profile) {
+  // The API returns camelCase, while this page's edit controls use the
+  // database-style names from the original mock profile data.
   return {
     profile_id: profile?.profileId ?? null,
     user_id: profile?.userId ?? null,
@@ -132,6 +134,7 @@ function normalizeProfile(profile) {
 }
 
 function buildProfilePayload(profile) {
+  // Convert the page's snake_case draft back to the backend's camelCase contract.
   return {
     fullName: profile.full_name.trim(),
     bio: profile.bio.trim(),
@@ -183,6 +186,7 @@ function skillIconClass(name) {
 function normalizeProjectListings(items) {
   if (!Array.isArray(items)) return []
 
+  // Featured Projects is a profile-specific view of the user's project listings.
   return items.map((listing) => ({
     project_id: listing.listingId,
     title: listing.title || 'Untitled project',
@@ -213,6 +217,8 @@ function normalizeOwnedListings(items) {
 function normalizeAppliedApplications(items, listingsById) {
   if (!Array.isArray(items)) return []
 
+  // Application rows only include listing ids, so callers pass the fetched
+  // listings map to render readable titles and listing status.
   return items.map((application) => {
     const listing = listingsById.get(application.listingId)
 
@@ -258,6 +264,8 @@ async function loadImageForCanvas(file) {
     }
   }
 
+  // Safari and older browsers may not support createImageBitmap for every
+  // uploaded file type, so fall back to object URLs plus Image().
   const objectUrl = URL.createObjectURL(file)
   try {
     const img = new Image()
@@ -307,6 +315,7 @@ async function fileToProfileImageDataUrl(file, maxEdge = 512, maxChars = 400_000
 
   let quality = 0.9
   let dataUrl = canvas.toDataURL('image/jpeg', quality)
+  // Keep profile photos small enough to store as text in profile_image_url.
   while (dataUrl.length > maxChars && quality > 0.52) {
     quality -= 0.07
     dataUrl = canvas.toDataURL('image/jpeg', quality)
@@ -400,6 +409,8 @@ export default function ProfilePage() {
       setErrorMessage('')
 
       try {
+        // Use allSettled so the profile can still render if listings or
+        // applications fail independently.
         const [profileResult, listingsResult, applicationsResult] =
           await Promise.allSettled([
           fetchProfile(user.id),
@@ -468,6 +479,8 @@ export default function ProfilePage() {
           ),
         ]
 
+        // Fetch each applied-to listing once so application cards and recent
+        // activity can show titles instead of raw UUIDs.
         if (applicationListingIds.length > 0) {
           const listingLookups = await Promise.allSettled(
             applicationListingIds.map((listingId) => fetchListing(listingId)),
@@ -1559,18 +1572,30 @@ export default function ProfilePage() {
                           {openListingMenuId === listing.listingId ? (
                             <div className="prof-listing-card__menu-popover">
                               {isOpen ? (
-                                <button
-                                  type="button"
-                                  className="prof-listing-card__menu-item"
-                                  onClick={() => {
-                                    setListingActionError('')
-                                    setListingToClose(listing)
-                                    setOpenListingMenuId(null)
-                                  }}
-                                  disabled={isClosing}
-                                >
-                                  {isClosing ? 'Closing...' : 'Close listing'}
-                                </button>
+                                <>
+                                  <Link
+                                    className="prof-listing-card__menu-item"
+                                    to={`/postings/${listing.listingId}/edit`}
+                                    onClick={() => {
+                                      setListingActionError('')
+                                      setOpenListingMenuId(null)
+                                    }}
+                                  >
+                                    Edit listing
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    className="prof-listing-card__menu-item"
+                                    onClick={() => {
+                                      setListingActionError('')
+                                      setListingToClose(listing)
+                                      setOpenListingMenuId(null)
+                                    }}
+                                    disabled={isClosing}
+                                  >
+                                    {isClosing ? 'Closing...' : 'Close listing'}
+                                  </button>
+                                </>
                               ) : (
                                 <button
                                   type="button"

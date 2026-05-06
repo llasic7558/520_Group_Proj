@@ -66,6 +66,7 @@ export class AuthenticationService {
 
     const payloadString = JSON.stringify(payload);
     const payloadEncoded = createBase64Url(payloadString);
+    // Lightweight HMAC token used instead of pulling in a JWT dependency.
     const signature = crypto
       .createHmac("sha256", env.authTokenSecret)
       .update(payloadEncoded)
@@ -90,6 +91,7 @@ export class AuthenticationService {
       .update(payloadEncoded)
       .digest("hex");
 
+    // Avoid leaking signature validity through timing differences.
     if (!timingSafeCompare(providedSignature, expectedSignature)) {
       throw createHttpError(401, "Authentication token is invalid");
     }
