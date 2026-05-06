@@ -81,6 +81,7 @@ export default function NotificationBell({
   }, [user?.id])
 
   useEffect(() => {
+    // A signed-out user should never keep another user's notification state.
     if (!user?.id) {
       setNotifications([])
       setUnreadCount(0)
@@ -118,6 +119,8 @@ export default function NotificationBell({
     const nextOpen = !isOpen
     setIsOpen(nextOpen)
 
+    // The first load already happens on mount; this covers empty/error states
+    // when the user opens the panel later.
     if (nextOpen && user?.id && notifications.length === 0) {
       await loadNotifications()
     }
@@ -140,6 +143,7 @@ export default function NotificationBell({
             : item,
         ),
       )
+      // Optimistically mirror the server read state without another full fetch.
       setUnreadCount((current) => Math.max(0, current - 1))
     } catch (err) {
       setErrorMessage(err?.message || 'Could not mark notification as read.')

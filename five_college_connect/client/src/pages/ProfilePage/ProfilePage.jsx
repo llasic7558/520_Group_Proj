@@ -263,6 +263,8 @@ async function loadImageForCanvas(file) {
     }
   }
 
+  // Safari and older browsers may not support createImageBitmap for every
+  // uploaded file type, so fall back to object URLs plus Image().
   const objectUrl = URL.createObjectURL(file)
   try {
     const img = new Image()
@@ -312,6 +314,7 @@ async function fileToProfileImageDataUrl(file, maxEdge = 512, maxChars = 400_000
 
   let quality = 0.9
   let dataUrl = canvas.toDataURL('image/jpeg', quality)
+  // Keep profile photos small enough to store as text in profile_image_url.
   while (dataUrl.length > maxChars && quality > 0.52) {
     quality -= 0.07
     dataUrl = canvas.toDataURL('image/jpeg', quality)

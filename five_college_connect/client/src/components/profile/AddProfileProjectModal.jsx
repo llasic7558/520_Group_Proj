@@ -23,6 +23,7 @@ function buildPortfolioListingPayload({
   banner_image_url,
   technologies,
 }) {
+  // Featured projects are normal project listings surfaced on the profile.
   return {
     title: title.trim(),
     description: description.trim(),
@@ -115,6 +116,8 @@ export default function AddProfileProjectModal({ open, onClose, onCreated }) {
 
       void (async () => {
         try {
+          // Store thumbnails as data URLs because this app does not have a file
+          // upload service yet.
           const dataUrl = await readFileAsDataUrl(file)
           if (!dataUrl.startsWith('data:image/')) {
             setErrorMessage('That file could not be used as an image.')
