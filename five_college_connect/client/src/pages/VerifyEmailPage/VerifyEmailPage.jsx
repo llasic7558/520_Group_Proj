@@ -19,11 +19,26 @@ function isTokenAlreadyUsedError(err) {
     .includes('already been used')
 }
 
+function getSafeReturnTo(value, fallback = '/opportunities') {
+  if (typeof value !== 'string') return fallback
+  if (!value.startsWith('/') || value.startsWith('//')) return fallback
+  if (value.startsWith('/verify-email')) return fallback
+  return value
+}
+
+function getReturnLabel(path) {
+  if (path.startsWith('/profile')) return 'profile'
+  if (path.startsWith('/signup')) return 'sign up'
+  return 'opportunities'
+}
+
 export default function VerifyEmailPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const query = useQuery()
   const { user, updateUser } = useAuth()
+  const returnTo = getSafeReturnTo(location.state?.returnTo)
+  const returnLabel = getReturnLabel(returnTo)
 
   const [token, setToken] = useState(() => query.get('token') || '')
   const [status, setStatus] = useState('idle') // idle | verifying | verified | error
@@ -39,7 +54,7 @@ export default function VerifyEmailPage() {
     }
     setStatus('verified')
     setMessage(redirectMessage)
-    setTimeout(() => navigate('/opportunities', { replace: true }), 800)
+    setTimeout(() => navigate(returnTo, { replace: true }), 800)
   }
 
   async function submitVerification(nextToken) {
@@ -65,7 +80,7 @@ export default function VerifyEmailPage() {
       if (result?.user) updateUser(result.user)
       setStatus('verified')
       setMessage('Email verified. Redirecting…')
-      setTimeout(() => navigate('/opportunities', { replace: true }), 800)
+      setTimeout(() => navigate(returnTo, { replace: true }), 800)
     } catch (err) {
       if (isTokenAlreadyUsedError(err)) {
         finishAsVerified('Your email is already verified. Redirecting…')
@@ -105,6 +120,9 @@ export default function VerifyEmailPage() {
   return (
     <div className="simple-page">
       <main id="main-content" tabIndex={-1} className="simple-page__main simple-page__main--center">
+        <p className="simple-page__back verify-email__back">
+          <Link to={returnTo}>{`← Back to ${returnLabel}`}</Link>
+        </p>
         <h1 className="simple-page__title">Verify your email</h1>
         <p className="simple-page__lede">
           {email

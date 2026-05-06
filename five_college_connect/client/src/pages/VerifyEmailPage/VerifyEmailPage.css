@@ -1,3 +1,7 @@
+.verify-email__back {
+  text-align: left;
+}
+
 .verify-email__message {
   margin: 0 0 14px;
   padding: 10px 12px;
@@ -23,4 +27,3 @@
 .verify-email__submessage--error {
   color: #991b1b;
 }
-

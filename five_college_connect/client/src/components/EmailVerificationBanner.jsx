@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.js'
 import { resendVerificationEmail } from '../lib/api.js'
 
-// Shown under the welcome banner on /opportunities when the user is signed in
-// but has not verified their email yet. Sends a new verification email and
-// navigates to the verification page.
+// Shown when the user is signed in but has not verified their email yet.
+// Sends a new verification email and navigates to the verification page.
 export default function EmailVerificationBanner() {
   const { user, isAuthenticated } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -21,7 +21,11 @@ export default function EmailVerificationBanner() {
     setLoading(true)
     try {
       await resendVerificationEmail()
-      navigate('/verify-email')
+      navigate('/verify-email', {
+        state: {
+          returnTo: `${location.pathname}${location.search}`,
+        },
+      })
     } catch (err) {
       setErrorMessage(
         err?.message || 'Could not send a verification email. Try again.',

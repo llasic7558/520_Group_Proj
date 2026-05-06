@@ -12,6 +12,7 @@ import {
   updateProfile,
 } from '../../lib/api.js'
 import { getUser } from '../../lib/authStorage.js'
+import EmailVerificationBanner from '../../components/EmailVerificationBanner.jsx'
 import AddProfileProjectModal from '../../components/profile/AddProfileProjectModal.jsx'
 import { TopNav } from '../../components/opportunities/TopNav.jsx'
 import {
@@ -846,6 +847,7 @@ export default function ProfilePage() {
   return (
     <div className="prof-app">
       <TopNav searchPlaceholder="Search for opportunities, skills, or students..." />
+      <EmailVerificationBanner />
 
       <div className="prof-shell">
         <div id="main-content" role="main" tabIndex={-1} className="prof-main">

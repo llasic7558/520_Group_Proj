@@ -17,6 +17,7 @@ function renderVerifyEmailPage({ route = '/verify-email', authValue } = {}) {
         path="/opportunities"
         element={<div>Opportunities destination</div>}
       />
+      <Route path="/profile" element={<div>Profile destination</div>} />
       <Route path="/signup" element={<div>Signup destination</div>} />
     </Routes>,
     {
@@ -27,6 +28,29 @@ function renderVerifyEmailPage({ route = '/verify-email', authValue } = {}) {
 }
 
 describe('VerifyEmailPage', () => {
+  it('shows a top-left back link to the page that sent the user here', async () => {
+    const user = userEvent.setup()
+
+    renderVerifyEmailPage({
+      route: {
+        pathname: '/verify-email',
+        state: { returnTo: '/profile' },
+      },
+      authValue: createAuthValue({
+        user: {
+          id: 'user-1',
+          email: 'student@umass.edu',
+          emailVerified: false,
+        },
+        isAuthenticated: true,
+      }),
+    })
+
+    await user.click(screen.getByRole('link', { name: '← Back to profile' }))
+
+    expect(screen.getByText('Profile destination')).toBeInTheDocument()
+  })
+
   it('fills a token from the URL and verifies after submit', async () => {
     const user = userEvent.setup()
     const updateUser = vi.fn()
