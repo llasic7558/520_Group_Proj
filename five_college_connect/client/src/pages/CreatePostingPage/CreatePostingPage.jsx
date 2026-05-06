@@ -62,6 +62,7 @@ function buildListingPayload(form, status) {
   }
 }
 
+// Keep the full form shape in one place so create and edit modes stay aligned.
 function createInitialForm() {
   return {
     title: '',
@@ -92,6 +93,8 @@ function dateInputValue(value) {
 function formFromListing(listing) {
   const skills = Array.isArray(listing?.skills) ? listing.skills : []
 
+  // The edit route reuses the create page, so API listing fields are translated
+  // back into the local form shape instead of maintaining a second form.
   return {
     ...createInitialForm(),
     title: listing?.title || '',
@@ -139,6 +142,7 @@ export default function CreatePostingPage() {
   const [isLoadingListing, setIsLoadingListing] = useState(isEditingListing)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  // Closed listings are reopened through the profile action menu before edits.
   const isClosedEdit = isEditingListing && !isLoadingListing && form.status !== 'open'
 
   useEffect(() => {
@@ -152,6 +156,7 @@ export default function CreatePostingPage() {
     setIsLoadingListing(true)
     setErrorMessage('')
 
+    // Guard against setting state if the user leaves this edit route mid-load.
     async function loadListing() {
       try {
         const listing = await fetchListing(listingId)
