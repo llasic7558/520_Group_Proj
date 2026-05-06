@@ -27,6 +27,50 @@ function buildProfileResponse({ skills = [], courses = [] } = {}) {
 }
 
 describe('ProfilePage', () => {
+  it('shows the email verification banner for an unverified user', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url) => {
+        const href = String(url)
+
+        if (href.includes('/api/profiles/user-1')) {
+          return mockJsonResponse({
+            profile: buildProfileResponse(),
+          })
+        }
+
+        if (href.includes('/api/listings?createdByUserId=user-1&limit=10')) {
+          return mockJsonResponse({ items: [] })
+        }
+
+        if (href.includes('/api/applications?limit=10')) {
+          return mockJsonResponse({ items: [] })
+        }
+
+        throw new Error(`Unhandled fetch URL: ${href}`)
+      }),
+    )
+
+    renderWithProviders(<ProfilePage />, {
+      route: '/profile',
+      authValue: createAuthValue({
+        user: {
+          id: 'user-1',
+          email: 'alex@umass.edu',
+          emailVerified: false,
+        },
+        isAuthenticated: true,
+      }),
+    })
+
+    expect(
+      await screen.findByText(/Please verify your school email/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Resend and verify →' }),
+    ).toBeInTheDocument()
+  })
+
   it('renders project postings and recent activity from user-scoped API data', async () => {
     const user = userEvent.setup({ delay: null })
     vi.stubGlobal(

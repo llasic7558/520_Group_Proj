@@ -154,6 +154,53 @@
   object-fit: cover;
 }
 
+.fcc-profile-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.fcc-profile-menu__panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  min-width: 160px;
+  padding: 6px;
+  border: 1px solid var(--fcc-border);
+  border-radius: 8px;
+  background: var(--fcc-card);
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.14);
+}
+
+.fcc-profile-menu__item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fcc-text);
+  font-family: var(--fcc-font);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.fcc-profile-menu__item:hover,
+.fcc-profile-menu__item:focus-visible {
+  background: rgba(128, 48, 48, 0.08);
+  outline: none;
+}
+
+.fcc-profile-menu__item--danger {
+  color: var(--fcc-maroon);
+}
+
 /* ——— Buttons ——— */
 .fcc-btn {
   display: inline-flex;

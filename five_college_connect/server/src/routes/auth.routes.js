@@ -12,7 +12,7 @@ router.post("/signup", signUp);
 router.post("/signin", signIn);
 
 // email verification endpoints
-router.get("/verify-email", verifyEmail);
+router.post("/verify-email", verifyEmail);
 router.post("/verify-email/resend", requireAuth, resendVerificationEmail);
 
 export default router;

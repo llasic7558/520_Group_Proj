@@ -17,6 +17,7 @@ function renderVerifyEmailPage({ route = '/verify-email', authValue } = {}) {
         path="/opportunities"
         element={<div>Opportunities destination</div>}
       />
+      <Route path="/profile" element={<div>Profile destination</div>} />
       <Route path="/signup" element={<div>Signup destination</div>} />
     </Routes>,
     {
@@ -27,7 +28,31 @@ function renderVerifyEmailPage({ route = '/verify-email', authValue } = {}) {
 }
 
 describe('VerifyEmailPage', () => {
-  it('verifies a token from the URL and updates the signed-in user', async () => {
+  it('shows a top-left back link to the page that sent the user here', async () => {
+    const user = userEvent.setup()
+
+    renderVerifyEmailPage({
+      route: {
+        pathname: '/verify-email',
+        state: { returnTo: '/profile' },
+      },
+      authValue: createAuthValue({
+        user: {
+          id: 'user-1',
+          email: 'student@umass.edu',
+          emailVerified: false,
+        },
+        isAuthenticated: true,
+      }),
+    })
+
+    await user.click(screen.getByRole('link', { name: '← Back to profile' }))
+
+    expect(screen.getByText('Profile destination')).toBeInTheDocument()
+  })
+
+  it('fills a token from the URL and verifies after submit', async () => {
+    const user = userEvent.setup()
     const updateUser = vi.fn()
     const verifiedUser = {
       id: 'user-1',
@@ -37,10 +62,10 @@ describe('VerifyEmailPage', () => {
 
     vi.stubGlobal(
       'fetch',
-      vi.fn((url) => {
-        expect(String(url)).toContain(
-          '/api/auth/verify-email?token=url-token-1',
-        )
+      vi.fn((url, init) => {
+        expect(String(url)).toContain('/api/auth/verify-email')
+        expect(init.method).toBe('POST')
+        expect(JSON.parse(init.body)).toEqual({ token: 'url-token-1' })
         return mockJsonResponse({ user: verifiedUser })
       }),
     )
@@ -52,6 +77,13 @@ describe('VerifyEmailPage', () => {
         updateUser,
       }),
     })
+
+    expect(screen.getByLabelText('Verification token')).toHaveValue(
+      'url-token-1',
+    )
+    expect(fetch).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Submit' }))
 
     expect(
       await screen.findByText('Email verified. Redirecting…'),
@@ -76,10 +108,10 @@ describe('VerifyEmailPage', () => {
 
     vi.stubGlobal(
       'fetch',
-      vi.fn((url) => {
-        expect(String(url)).toContain(
-          '/api/auth/verify-email?token=pasted-token-1',
-        )
+      vi.fn((url, init) => {
+        expect(String(url)).toContain('/api/auth/verify-email')
+        expect(init.method).toBe('POST')
+        expect(JSON.parse(init.body)).toEqual({ token: 'pasted-token-1' })
         return mockJsonResponse({
           user: {
             id: 'user-1',
@@ -104,6 +136,7 @@ describe('VerifyEmailPage', () => {
   })
 
   it('treats an already-used token as verified for the current user', async () => {
+    const user = userEvent.setup()
     const updateUser = vi.fn()
     const signedInUser = {
       id: 'user-1',
@@ -128,6 +161,8 @@ describe('VerifyEmailPage', () => {
         updateUser,
       }),
     })
+
+    await user.click(screen.getByRole('button', { name: 'Submit' }))
 
     expect(
       await screen.findByText('Your email is already verified. Redirecting…'),
