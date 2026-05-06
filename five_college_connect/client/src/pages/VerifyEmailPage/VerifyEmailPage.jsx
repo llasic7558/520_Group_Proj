@@ -5,8 +5,7 @@ import { useAuth } from '../../context/AuthContext.js'
 import '../shared/simplePages.css'
 import './VerifyEmailPage.css'
 
-// Prevents double verification: React 18 Strict Mode runs effects twice in dev,
-// and some email clients prefetch links — both can consume a one-time token.
+// Prevents double submits while the verify request is in flight.
 const verifyAttemptInFlight = new Set()
 
 function useQuery() {
@@ -59,9 +58,10 @@ export default function VerifyEmailPage() {
     setStatus('verifying')
     setMessage('')
     try {
-      const result = await apiRequest(
-        `/api/auth/verify-email?token=${encodeURIComponent(trimmed)}`,
-      )
+      const result = await apiRequest('/api/auth/verify-email', {
+        method: 'POST',
+        body: { token: trimmed },
+      })
       if (result?.user) updateUser(result.user)
       setStatus('verified')
       setMessage('Email verified. Redirecting…')
@@ -98,10 +98,7 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     const urlToken = query.get('token')?.trim()
     if (urlToken && urlToken !== token) setToken(urlToken)
-    if (urlToken) {
-      void submitVerification(urlToken)
-    }
-    // Only re-run when the link query changes (not on every token keystroke).
+    // Only sync the link token into the input. Verification requires submit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search])
 
@@ -190,4 +187,3 @@ export default function VerifyEmailPage() {
     </div>
   )
 }
-

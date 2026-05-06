@@ -27,7 +27,8 @@ function renderVerifyEmailPage({ route = '/verify-email', authValue } = {}) {
 }
 
 describe('VerifyEmailPage', () => {
-  it('verifies a token from the URL and updates the signed-in user', async () => {
+  it('fills a token from the URL and verifies after submit', async () => {
+    const user = userEvent.setup()
     const updateUser = vi.fn()
     const verifiedUser = {
       id: 'user-1',
@@ -37,10 +38,10 @@ describe('VerifyEmailPage', () => {
 
     vi.stubGlobal(
       'fetch',
-      vi.fn((url) => {
-        expect(String(url)).toContain(
-          '/api/auth/verify-email?token=url-token-1',
-        )
+      vi.fn((url, init) => {
+        expect(String(url)).toContain('/api/auth/verify-email')
+        expect(init.method).toBe('POST')
+        expect(JSON.parse(init.body)).toEqual({ token: 'url-token-1' })
         return mockJsonResponse({ user: verifiedUser })
       }),
     )
@@ -52,6 +53,13 @@ describe('VerifyEmailPage', () => {
         updateUser,
       }),
     })
+
+    expect(screen.getByLabelText('Verification token')).toHaveValue(
+      'url-token-1',
+    )
+    expect(fetch).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Submit' }))
 
     expect(
       await screen.findByText('Email verified. Redirecting…'),
@@ -76,10 +84,10 @@ describe('VerifyEmailPage', () => {
 
     vi.stubGlobal(
       'fetch',
-      vi.fn((url) => {
-        expect(String(url)).toContain(
-          '/api/auth/verify-email?token=pasted-token-1',
-        )
+      vi.fn((url, init) => {
+        expect(String(url)).toContain('/api/auth/verify-email')
+        expect(init.method).toBe('POST')
+        expect(JSON.parse(init.body)).toEqual({ token: 'pasted-token-1' })
         return mockJsonResponse({
           user: {
             id: 'user-1',
@@ -104,6 +112,7 @@ describe('VerifyEmailPage', () => {
   })
 
   it('treats an already-used token as verified for the current user', async () => {
+    const user = userEvent.setup()
     const updateUser = vi.fn()
     const signedInUser = {
       id: 'user-1',
@@ -128,6 +137,8 @@ describe('VerifyEmailPage', () => {
         updateUser,
       }),
     })
+
+    await user.click(screen.getByRole('button', { name: 'Submit' }))
 
     expect(
       await screen.findByText('Your email is already verified. Redirecting…'),
