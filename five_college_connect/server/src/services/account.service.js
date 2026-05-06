@@ -126,6 +126,7 @@ export class AccountService {
     const token = this.authenticationService.createEmailVerificationToken();
     const expiresAt = this.authenticationService.getEmailVerificationExpiry();
 
+    // Only the newest verification email should be usable after resends.
     await this.emailVerificationTokenRepository.invalidateActiveTokensForUser(user.userId);
     await this.emailVerificationTokenRepository.createToken({
       userId: user.userId,
@@ -190,6 +191,7 @@ export class AccountService {
         throw createHttpError(404, "User not found");
       }
 
+      // Mark the submitted token and any sibling active tokens as consumed.
       await this.emailVerificationTokenRepository.markUsed(verificationToken.tokenId, client);
       await this.emailVerificationTokenRepository.invalidateActiveTokensForUser(
         verificationToken.userId,

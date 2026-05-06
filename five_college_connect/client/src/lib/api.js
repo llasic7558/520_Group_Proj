@@ -137,6 +137,14 @@ export async function createListing(body) {
   return payload?.listing ?? null
 }
 
+export async function updateListing(listingId, body) {
+  const payload = await apiRequest(`/api/listings/${listingId}`, {
+    method: 'PUT',
+    body,
+  })
+  return payload?.listing ?? null
+}
+
 export async function fetchListing(listingId) {
   const payload = await apiRequest(`/api/listings/${listingId}`)
   return payload?.listing ?? null

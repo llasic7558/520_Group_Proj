@@ -726,6 +726,7 @@
 }
 
 .prof-listing-card__menu-item {
+  display: block;
   width: 100%;
   border: none;
   border-radius: 8px;
@@ -737,6 +738,7 @@
   font-weight: 600;
   padding: 9px 10px;
   text-align: left;
+  text-decoration: none;
 }
 
 .prof-listing-card__menu-item:hover:not(:disabled) {

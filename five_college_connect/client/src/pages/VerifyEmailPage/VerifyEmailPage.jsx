@@ -99,6 +99,8 @@ export default function VerifyEmailPage() {
     const urlToken = query.get('token')?.trim()
     if (urlToken && urlToken !== token) setToken(urlToken)
     if (urlToken) {
+      // Opening the emailed link should verify immediately; the input remains
+      // as a fallback for users who paste a token manually.
       void submitVerification(urlToken)
     }
     // Only re-run when the link query changes (not on every token keystroke).
@@ -190,4 +192,3 @@ export default function VerifyEmailPage() {
     </div>
   )
 }
-

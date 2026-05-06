@@ -42,6 +42,8 @@ function normalizeListingStatus(value) {
 }
 
 function normalizeListingPayload(payload) {
+  // Accept both frontend camelCase and database-style snake_case payloads while
+  // keeping repositories on one internal shape.
   return {
     createdByUserId: normalizeString(payload.createdByUserId || payload.created_by_user_id),
     title: normalizeString(payload.title),

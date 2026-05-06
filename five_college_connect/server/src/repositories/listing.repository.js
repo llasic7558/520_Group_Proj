@@ -125,6 +125,7 @@ export class ListingRepository {
           AND (
             $4 = ''
             OR status = $4
+            -- Older seed/test data used "published" before the app settled on "open".
             OR ($4 = 'open' AND status = 'published')
           )
           AND ($5 = '' OR created_by_user_id = $5::uuid)
@@ -200,6 +201,7 @@ export class ListingRepository {
   }
 
   async deleteListing(listingId, executor = { query }) {
+    // Closing is a soft delete so applications and owner history remain visible.
     const result = await executor.query(
       `
         UPDATE listings
