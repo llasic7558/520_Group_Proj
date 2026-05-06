@@ -68,6 +68,34 @@ export class UserRepository {
     return result.rows[0] ? new User(result.rows[0]) : null;
   }
 
+  async findByIds(ids, executor = { query }) {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return new Map();
+    }
+
+    const result = await executor.query(
+      `
+        SELECT
+          user_id,
+          username,
+          email,
+          password_hash,
+          role,
+          email_verified,
+          teacher_badge,
+          created_at,
+          status
+        FROM users
+        WHERE user_id = ANY($1::uuid[])
+      `,
+      [ids]
+    );
+
+    return new Map(
+      result.rows.map((row) => [row.user_id, new User(row)])
+    );
+  }
+
   async markEmailVerified(id, executor = { query }) {
     const result = await executor.query(
       `

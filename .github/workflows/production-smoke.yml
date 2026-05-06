@@ -1,0 +1,71 @@
+name: Production Smoke
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "0 14 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: production-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Live Deployment Smoke
+    if: ${{ vars.PRODUCTION_API_URL != '' && vars.PRODUCTION_FRONTEND_URL != '' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: five_college_connect/server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: five_college_connect/server/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - uses: grafana/setup-k6-action@v1
+
+      - name: Wait for live backend healthcheck
+        env:
+          PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL }}
+        run: curl --fail --retry 12 --retry-delay 10 --retry-all-errors "${PRODUCTION_API_URL}/health"
+
+      - name: Run public API smoke
+        env:
+          K6_BASE_URL: ${{ vars.PRODUCTION_API_URL }}
+          K6_VUS: "1"
+          K6_ITERATIONS: "3"
+          K6_P95_MS: "2000"
+          K6_FAILED_RATE: "0.05"
+        run: npm run test:load:smoke
+
+      - name: Run frontend smoke
+        env:
+          K6_FRONTEND_BASE_URL: ${{ vars.PRODUCTION_FRONTEND_URL }}
+          K6_VUS: "2"
+          K6_DURATION: "15s"
+          K6_P95_MS: "2500"
+          K6_FAILED_RATE: "0.05"
+        run: npm run test:load:frontend
+
+      - name: Run authenticated API smoke
+        env:
+          K6_BASE_URL: ${{ vars.PRODUCTION_API_URL }}
+          K6_SIGNIN_EMAILS: ${{ secrets.PRODUCTION_TEST_EMAIL }}
+          K6_SIGNIN_PASSWORD: ${{ secrets.PRODUCTION_TEST_PASSWORD }}
+          K6_SIGNIN_EXPECTED_USER_IDS: ${{ secrets.PRODUCTION_TEST_USER_ID }}
+          K6_VUS: "1"
+          K6_DURATION: "15s"
+          K6_P95_MS: "2500"
+          K6_FAILED_RATE: "0.05"
+        if: ${{ env.K6_SIGNIN_EMAILS != '' && env.K6_SIGNIN_PASSWORD != '' }}
+        run: npm run test:load:auth

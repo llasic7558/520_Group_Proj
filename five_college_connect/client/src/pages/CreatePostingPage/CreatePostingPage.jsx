@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import NotificationBell from '../../components/NotificationBell.jsx'
 import {
-  IconBell,
   IconBook,
   IconBriefcase,
   IconCode,
@@ -11,7 +11,9 @@ import {
   LogoCap,
 } from '../../components/opportunities/Icons.jsx'
 import { createListing, fetchListing, updateListing } from '../../lib/api.js'
+import { useAuth } from '../../context/AuthContext.js'
 import { logError, logInfo, logWarn } from '../../lib/logger.js'
+import { resolveProfileImageUrl } from '../../lib/profileImageUrl.js'
 import './CreatePostingPage.css'
 
 // big buttons for listing category (same ids as backend category enum)
@@ -49,7 +51,6 @@ function buildListingPayload(form, status) {
     category: form.category,
     contact_method: form.contact_method,
     contact_details: form.contact_details.trim(),
-    banner_image_url: form.banner_image_url.trim() || null,
     custom_color: form.custom_color.trim() || null,
     status,
     expiration_date: form.expiration_date.trim() || null,
@@ -136,7 +137,9 @@ function ToggleRow({ id, label, checked, onChange }) {
 export default function CreatePostingPage() {
   const navigate = useNavigate()
   const { listingId } = useParams()
+  const { user } = useAuth()
   const isEditingListing = Boolean(listingId)
+  const navAvatarSrc = resolveProfileImageUrl(user?.profileImageUrl)
   // one big object is easier than a million usestates
   const [form, setForm] = useState(() => createInitialForm())
   const [isLoadingListing, setIsLoadingListing] = useState(isEditingListing)
@@ -287,18 +290,25 @@ export default function CreatePostingPage() {
                 ? 'Update'
                 : 'Publish'}
           </button>
-          <button type="button" className="cp-icon-btn" aria-label="Notifications">
-            <IconBell />
-          </button>
+          <NotificationBell buttonClassName="cp-icon-btn" />
           <Link to="/profile" className="cp-avatar" aria-label="My profile">
-            <span className="cp-avatar__ph" />
+            {navAvatarSrc ? (
+              <img
+                src={navAvatarSrc}
+                alt=""
+                className="cp-avatar__img"
+                decoding="async"
+              />
+            ) : (
+              <span className="cp-avatar__ph" />
+            )}
           </Link>
         </div>
       </header>
 
       {/* left = form, right = preview + toggles */}
       <div className="cp-shell">
-        <div className="cp-form-col">
+        <div id="main-content" role="main" tabIndex={-1} className="cp-form-col">
           {isLoadingListing ? (
             <p
               role="status"
@@ -516,33 +526,18 @@ export default function CreatePostingPage() {
             </div>
           )}
 
-          <div className="cp-row-2">
-            <div className="cp-field">
-              <label className="cp-label" htmlFor="listing-expires">
-                Expiration date (optional)
-              </label>
-              <input
-                id="listing-expires"
-                className="cp-input"
-                type="date"
-                name="expiration_date"
-                value={form.expiration_date}
-                onChange={(e) => setField('expiration_date', e.target.value)}
-              />
-            </div>
-            <div className="cp-field">
-              <label className="cp-label" htmlFor="listing-banner">
-                Banner image URL (optional)
-              </label>
-              <input
-                id="listing-banner"
-                className="cp-input"
-                name="banner_image_url"
-                value={form.banner_image_url}
-                onChange={(e) => setField('banner_image_url', e.target.value)}
-                placeholder="https://…"
-              />
-            </div>
+          <div className="cp-field">
+            <label className="cp-label" htmlFor="listing-expires">
+              Expiration date (optional)
+            </label>
+            <input
+              id="listing-expires"
+              className="cp-input"
+              type="date"
+              name="expiration_date"
+              value={form.expiration_date}
+              onChange={(e) => setField('expiration_date', e.target.value)}
+            />
           </div>
 
           <div className="cp-field">
@@ -605,7 +600,6 @@ export default function CreatePostingPage() {
             <ul className="cp-tips">
               <li>Use clear, descriptive titles</li>
               <li>Include specific requirements</li>
-              <li>Add an engaging banner image</li>
               <li>Respond to applicants promptly</li>
             </ul>
           </section>

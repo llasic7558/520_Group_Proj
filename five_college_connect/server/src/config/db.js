@@ -14,11 +14,53 @@ export const dbConfig = {
 // and repositories call these helpers.
 export const pool = new Pool(dbConfig);
 
+
+let compatibilityMigrationPromise = null;
+
+function ignoreDuplicateSetupError(error) {
+  if (!error) {
+    return false;
+  }
+
+  return (
+    error.code === "23505" ||
+    error.code === "42P07"
+  );
+}
+
 async function applyCompatibilityMigrations() {
-  await query(`
-    ALTER TABLE users
-    DROP CONSTRAINT IF EXISTS users_username_key
-  `);
+  if (!compatibilityMigrationPromise) {
+    compatibilityMigrationPromise = (async () => {
+      await query(`
+        ALTER TABLE users
+        DROP CONSTRAINT IF EXISTS users_username_key
+      `);
+
+      try {
+        await query(`
+          CREATE EXTENSION IF NOT EXISTS pg_trgm
+        `);
+      } catch (error) {
+        if (!ignoreDuplicateSetupError(error)) {
+          throw error;
+        }
+      }
+
+      try {
+        await query(`
+          CREATE INDEX IF NOT EXISTS idx_listings_title_trgm
+          ON listings
+          USING gin (title gin_trgm_ops)
+        `);
+      } catch (error) {
+        if (!ignoreDuplicateSetupError(error)) {
+          throw error;
+        }
+      }
+    })();
+  }
+
+  return compatibilityMigrationPromise;
 }
 
 export async function query(text, params = []) {

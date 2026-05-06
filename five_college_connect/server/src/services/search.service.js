@@ -1,5 +1,11 @@
+import { ListingService } from "./listing.service.js";
+
 export class SearchService {
-  // Not implemented yet, but will handle all business logic related to searching
-  // for listings and study groups, including filtering and sorting results based
-  // on user criteria.
+  constructor() {
+    this.listingService = new ListingService();
+  }
+
+  async searchListings(filters = {}, executor = undefined) {
+    return this.listingService.listListings(filters, executor);
+  }
 }

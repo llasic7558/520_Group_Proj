@@ -14,6 +14,9 @@ import VerifyEmailPage from './pages/VerifyEmailPage/VerifyEmailPage.jsx'
 export default function App() {
   return (
     <AuthProvider>
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />

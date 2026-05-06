@@ -273,7 +273,6 @@ test("PUT /api/listings/:listingId updates listing fields and related rows", asy
       category: "job",
       contactMethod: "profile",
       contactDetails: "",
-      bannerImageUrl: "https://example.com/banner.png",
       customColor: "#abcdef",
       status: "closed",
       expirationDate: "2026-12-31",

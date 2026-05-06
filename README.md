@@ -119,6 +119,8 @@ Then open **http://localhost:3000** in your browser.
 | `npm run db:up` | Start only Postgres in Docker (e.g. before running server tests) |
 | `npm run db:down` | Stop Postgres without removing the volume |
 | `npm run db:reset` | Drop the Postgres volume and re-init schema + seed |
+| `npm run test:e2e` | Run the Playwright end-to-end suite against the local app |
+| `npm run test:e2e:headed` | Run the same Playwright suite with a visible browser |
 
 **Server tests** (Node's built-in test runner; hits the real Dockerized DB)
 ```bash
@@ -126,6 +128,22 @@ npm run db:up                          # make sure Postgres is running
 cd five_college_connect/server
 npm test
 ```
+
+**End-to-end tests** (Playwright; starts Postgres, the server, and the Vite client locally)
+```bash
+npm install
+npm run test:e2e:install              # one-time browser install
+npm run test:e2e
+```
+
+The Playwright suite currently covers:
+- landing page rendering
+- protected-route redirect to `/login`
+- invalid login feedback
+- seeded-user login to the opportunities feed
+- signup flow to the verify-email screen
+- authenticated opportunities filtering
+- authenticated profile access
 
 **Client lint**
 ```bash
@@ -139,6 +157,25 @@ cd five_college_connect/client
 npm run build
 npm run preview   # optional: serve the built files locally
 ```
+
+**Test coverage**
+```bash
+npm run db:up
+npm run coverage
+```
+
+The coverage command runs the backend API tests with Node's built-in test runner
+and `c8`/V8 coverage, then runs the frontend tests with Vitest and
+`@vitest/coverage-v8`. The root script combines both LCOV reports and prints
+the overall line coverage percentage.
+
+Latest local coverage run:
+
+| Area | Tool | Line coverage |
+| --- | --- | --- |
+| Server | Node.js test runner + `c8` / V8 coverage | 89.55% |
+| Client | Vitest + `@vitest/coverage-v8` | 61.44% |
+| Overall | Combined LCOV line coverage | 84.00% |
 
 ---
 

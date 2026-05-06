@@ -11,6 +11,8 @@ import {
   reopenListing,
   updateProfile,
 } from '../../lib/api.js'
+import { getUser } from '../../lib/authStorage.js'
+import AddProfileProjectModal from '../../components/profile/AddProfileProjectModal.jsx'
 import { TopNav } from '../../components/opportunities/TopNav.jsx'
 import {
   IconGithub,
@@ -21,6 +23,7 @@ import {
   IconVerified,
 } from '../../components/opportunities/Icons.jsx'
 import { logError, logInfo, logWarn } from '../../lib/logger.js'
+import { resolveProfileImageUrl } from '../../lib/profileImageUrl.js'
 import '../OpportunitiesPage/OpportunitiesPage.css'
 import './ProfilePage.css'
 
@@ -38,6 +41,8 @@ const COURSE_STATUS_OPTIONS = [
   'dropped',
 ]
 
+const PROFILE_PHOTO_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif'
+
 const EMPTY_PROFILE = {
   profile_id: null,
   user_id: null,
@@ -53,6 +58,9 @@ const EMPTY_PROFILE = {
   skills: [],
   courses: [],
 }
+
+/** Max project cards shown in Featured Projects before requiring "View All". */
+const FEATURED_PROJECTS_PREVIEW_MAX = 2
 
 function createDraftSkill() {
   return {
@@ -182,11 +190,12 @@ function normalizeProjectListings(items) {
     project_id: listing.listingId,
     title: listing.title || 'Untitled project',
     description: listing.description || 'No description provided.',
+    image_url: listing.bannerImageUrl || listing.banner_image_url || '',
     tags: Array.isArray(listing.skills)
       ? listing.skills
           .map((skill) => skill.name)
           .filter(Boolean)
-          .slice(0, 4)
+          .slice(0, 12)
       : [],
   }))
 }
@@ -245,6 +254,76 @@ function formatRelativeTime(iso) {
   return date.toLocaleDateString()
 }
 
+async function loadImageForCanvas(file) {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      return await createImageBitmap(file)
+    } catch {
+      /* fall through to Image() */
+    }
+  }
+
+  const objectUrl = URL.createObjectURL(file)
+  try {
+    const img = new Image()
+    await new Promise((resolve, reject) => {
+      img.onload = resolve
+      img.onerror = () => reject(new Error('Could not load image.'))
+      img.src = objectUrl
+    })
+    return img
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
+}
+
+/**
+ * Resize and compress to JPEG data URL for storage in profile_image_url.
+ */
+async function fileToProfileImageDataUrl(file, maxEdge = 512, maxChars = 400_000) {
+  const allowed = new Set(PROFILE_PHOTO_ACCEPT.split(','))
+  if (!file?.type || !allowed.has(file.type)) {
+    throw new Error('Please choose a JPEG, PNG, WebP, or GIF image.')
+  }
+
+  const source = await loadImageForCanvas(file)
+  const sw = source.width ?? source.naturalWidth
+  const sh = source.height ?? source.naturalHeight
+  if (!sw || !sh) {
+    source.close?.()
+    throw new Error('Could not read image dimensions.')
+  }
+
+  const scale = Math.min(1, maxEdge / Math.max(sw, sh))
+  const tw = Math.max(1, Math.round(sw * scale))
+  const th = Math.max(1, Math.round(sh * scale))
+
+  const canvas = document.createElement('canvas')
+  canvas.width = tw
+  canvas.height = th
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    source.close?.()
+    throw new Error('Could not process image in this browser.')
+  }
+
+  ctx.drawImage(source, 0, 0, tw, th)
+  source.close?.()
+
+  let quality = 0.9
+  let dataUrl = canvas.toDataURL('image/jpeg', quality)
+  while (dataUrl.length > maxChars && quality > 0.52) {
+    quality -= 0.07
+    dataUrl = canvas.toDataURL('image/jpeg', quality)
+  }
+
+  if (dataUrl.length > maxChars) {
+    throw new Error('Image is still too large after compressing. Try a smaller file.')
+  }
+
+  return dataUrl
+}
+
 function buildRecentActivity({ listings, applications, listingTitles }) {
   const listingActivity = (listings ?? []).map((listing) => {
     const category = String(listing.category || 'opportunity').toLowerCase()
@@ -282,7 +361,7 @@ function buildRecentActivity({ listings, applications, listingTitles }) {
 }
 
 export default function ProfilePage() {
-  const { user } = useAuth()
+  const { user, updateUser } = useAuth()
   const [profile, setProfile] = useState(null)
   const [ownedListings, setOwnedListings] = useState([])
   const [appliedApplications, setAppliedApplications] = useState([])
@@ -300,6 +379,15 @@ export default function ProfilePage() {
   const [openListingMenuId, setOpenListingMenuId] = useState(null)
   const [listingToDelete, setListingToDelete] = useState(null)
   const [deletingListingId, setDeletingListingId] = useState(null)
+  const [isAddProjectOpen, setIsAddProjectOpen] = useState(false)
+  const [featuredProjectsExpanded, setFeaturedProjectsExpanded] = useState(false)
+  const [profilePhotoError, setProfilePhotoError] = useState('')
+
+  useEffect(() => {
+    if (!isEditing) {
+      setFeaturedProjectsExpanded(false)
+    }
+  }, [isEditing])
 
   useEffect(() => {
     let ignore = false
@@ -334,7 +422,15 @@ export default function ProfilePage() {
         if (ignore) return
 
         if (profileResult.status === 'fulfilled') {
-          setProfile(normalizeProfile(profileResult.value))
+          const normalized = normalizeProfile(profileResult.value)
+          setProfile(normalized)
+          const stored = getUser()
+          if (stored?.id === user.id) {
+            updateUser({
+              ...stored,
+              profileImageUrl: (normalized.profile_image_url || '').trim(),
+            })
+          }
           logInfo('Profile loaded', {
             userId: user.id,
           })
@@ -467,7 +563,7 @@ export default function ProfilePage() {
     return () => {
       ignore = true
     }
-  }, [user?.id])
+  }, [user?.id, updateUser])
 
   function startEdit() {
     if (!profile) return
@@ -476,6 +572,7 @@ export default function ProfilePage() {
       skills: profile.skills.map((skill) => ({ ...skill })),
       courses: profile.courses.map((course) => ({ ...course })),
     })
+    setProfilePhotoError('')
     setErrorMessage('')
     setIsEditing(true)
   }
@@ -534,15 +631,8 @@ export default function ProfilePage() {
             return current
           }
 
-          return [
-            {
-              project_id: listing.listingId,
-              title: listing.title,
-              description: listing.description,
-              tags: [],
-            },
-            ...current,
-          ]
+          const [next] = normalizeProjectListings([reopened])
+          return next ? [next, ...current] : current
         })
       }
       setOpenListingMenuId(null)
@@ -583,10 +673,64 @@ export default function ProfilePage() {
     }
   }
 
+  function handleFeaturedProjectCreated(listing) {
+    if (!listing) return
+
+    setOwnedListings((prev) => {
+      const [next] = normalizeOwnedListings([listing])
+      if (!next) return prev
+      return [next, ...prev.filter((l) => l.listingId !== next.listingId)]
+    })
+    setProjectListings((prev) => {
+      const [next] = normalizeProjectListings([listing])
+      if (!next) return prev
+      return [next, ...prev.filter((p) => p.project_id !== next.project_id)]
+    })
+    const occurredAt = listing.createdAt || new Date().toISOString()
+    setRecentActivity((prev) =>
+      [
+        {
+          id: `listing-${listing.listingId}`,
+          message: `Created a project posting: ${listing.title}`,
+          occurredAt,
+          occurred_at_label: 'Just now',
+        },
+        ...prev.filter((a) => a.id !== `listing-${listing.listingId}`),
+      ].slice(0, 6),
+    )
+  }
+
   function cancelEdit() {
     setDraft(null)
     setIsEditing(false)
     setErrorMessage('')
+    setProfilePhotoError('')
+  }
+
+  async function handleProfilePhotoChange(event) {
+    const input = event.target
+    const file = input.files?.[0]
+    input.value = ''
+    if (!file) return
+
+    setProfilePhotoError('')
+    try {
+      const dataUrl = await fileToProfileImageDataUrl(file)
+      setDraft((current) =>
+        current ? { ...current, profile_image_url: dataUrl } : current,
+      )
+    } catch (err) {
+      setProfilePhotoError(
+        err instanceof Error ? err.message : 'Could not use that image.',
+      )
+    }
+  }
+
+  function clearProfilePhoto() {
+    setProfilePhotoError('')
+    setDraft((current) =>
+      current ? { ...current, profile_image_url: '' } : current,
+    )
   }
 
   function updateSkill(index, field, value) {
@@ -663,6 +807,13 @@ export default function ProfilePage() {
         buildProfilePayload(draft),
       )
       setProfile(normalizeProfile(savedProfile))
+      const stored = getUser()
+      if (stored) {
+        updateUser({
+          ...stored,
+          profileImageUrl: (savedProfile.profileImageUrl ?? '').trim(),
+        })
+      }
       logInfo('Profile updated', {
         userId: user.id,
         skillCount: draft.skills.length,
@@ -685,12 +836,29 @@ export default function ProfilePage() {
   const skills = display.skills ?? []
   const courses = display.courses ?? []
 
+  const featuredProjectsOverflow =
+    projectListings.length > FEATURED_PROJECTS_PREVIEW_MAX
+  const visibleFeaturedProjects =
+    isEditing || !featuredProjectsOverflow || featuredProjectsExpanded
+      ? projectListings
+      : projectListings.slice(0, FEATURED_PROJECTS_PREVIEW_MAX)
+
+  const newestOwnedListingForApplications =
+    ownedListings.length > 0
+      ? [...ownedListings].sort(
+          (a, b) =>
+            new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+        )[0]
+      : null
+
+  const profilePhotoSrc = resolveProfileImageUrl(display.profile_image_url)
+
   return (
     <div className="prof-app">
       <TopNav searchPlaceholder="Search for opportunities, skills, or students..." />
 
       <div className="prof-shell">
-        <div className="prof-main">
+        <div id="main-content" role="main" tabIndex={-1} className="prof-main">
           {errorMessage ? (
             <p
               role="alert"
@@ -712,14 +880,57 @@ export default function ProfilePage() {
             <div className="prof-hero__inner">
               <div className="prof-hero__avatar-wrap">
                 <div
-                  className="prof-hero__avatar"
+                  className={
+                    profilePhotoSrc
+                      ? 'prof-hero__avatar prof-hero__avatar--photo'
+                      : 'prof-hero__avatar'
+                  }
                   role="img"
                   aria-label={display.full_name || 'Profile avatar'}
+                  style={
+                    profilePhotoSrc
+                      ? {
+                          backgroundImage: `url(${JSON.stringify(profilePhotoSrc)})`,
+                        }
+                      : undefined
+                  }
                 />
                 {user?.emailVerified ? (
                   <span className="prof-hero__verified" title="Verified student">
                     <IconVerified />
                   </span>
+                ) : null}
+                {isEditing && draft ? (
+                  <div className="prof-hero__photo-actions">
+                    <input
+                      id="prof-profile-photo-input"
+                      type="file"
+                      className="prof-hero__photo-input"
+                      accept={PROFILE_PHOTO_ACCEPT}
+                      onChange={handleProfilePhotoChange}
+                    />
+                    <label
+                      htmlFor="prof-profile-photo-input"
+                      className="prof-hero__photo-upload-label"
+                    >
+                      Upload photo
+                    </label>
+                    {draft.profile_image_url?.trim() ? (
+                      <button
+                        type="button"
+                        className="prof-link-btn prof-hero__photo-remove"
+                        onClick={clearProfilePhoto}
+                        disabled={isSaving}
+                      >
+                        Remove photo
+                      </button>
+                    ) : null}
+                    {profilePhotoError ? (
+                      <p className="prof-hero__photo-error" role="alert">
+                        {profilePhotoError}
+                      </p>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
               <div className="prof-hero__info">
@@ -1120,33 +1331,70 @@ export default function ProfilePage() {
 
           <section className="prof-section">
             <div className="prof-section__head">
-              <h2 className="prof-section__title">Featured Projects</h2>
+              <h2 className="prof-section__title">
+                <svg
+                  className="prof-section__icon-folder"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                </svg>
+                Featured Projects
+              </h2>
               {isEditing ? (
                 <button
                   type="button"
                   className="prof-link-btn"
-                  disabled
+                  onClick={() => setIsAddProjectOpen(true)}
+                  disabled={isSaving || isLoading}
                 >
                   + Add Project
                 </button>
-              ) : (
-                <Link className="prof-text-link" to="/postings/new">
-                  Create Project
-                </Link>
-              )}
+              ) : featuredProjectsOverflow ? (
+                <button
+                  type="button"
+                  className="prof-view-all-btn"
+                  onClick={() =>
+                    setFeaturedProjectsExpanded((current) => !current)
+                  }
+                >
+                  {featuredProjectsExpanded
+                    ? 'Show less'
+                    : `View All (${projectListings.length})`}
+                </button>
+              ) : null}
             </div>
             <div className="prof-projects">
               {isLoading ? (
                 <p className="prof-section__body">Loading projects...</p>
               ) : projectListings.length === 0 ? (
                 <p className="prof-section__body">
-                  No project listings yet. Create a posting in the project
-                  category to show work here.
+                  You have not added any project yet.
                 </p>
               ) : (
-                projectListings.map((project) => (
+                visibleFeaturedProjects.map((project) => (
                   <article key={project.project_id} className="prof-project-card">
-                    <div className="prof-project-card__thumb" aria-hidden />
+                    <div
+                      className={
+                        project.image_url
+                          ? 'prof-project-card__media prof-project-card__media--image'
+                          : 'prof-project-card__media'
+                      }
+                      style={
+                        project.image_url
+                          ? { backgroundImage: `url(${project.image_url})` }
+                          : undefined
+                      }
+                      aria-hidden
+                    />
                     <div className="prof-project-card__body">
                       <h3 className="prof-project-card__title">{project.title}</h3>
                       <p className="prof-project-card__desc">
@@ -1227,9 +1475,29 @@ export default function ProfilePage() {
           <section className="prof-section" id="my-listings">
             <div className="prof-section__head">
               <h2 className="prof-section__title">My Listings</h2>
-              <Link className="prof-text-link" to="/postings/new">
-                Create Listing
-              </Link>
+              {isEditing ? (
+                <Link className="prof-text-link" to="/postings/new">
+                  Create listing
+                </Link>
+              ) : newestOwnedListingForApplications ? (
+                <Link
+                  className="prof-text-link"
+                  to={`/postings/${newestOwnedListingForApplications.listingId}/applications`}
+                  state={{
+                    returnTo: {
+                      path: '/profile#my-listings',
+                      label: 'Back to profile',
+                    },
+                  }}
+                  title={
+                    ownedListings.length > 1
+                      ? 'Applications for your most recently created listing'
+                      : undefined
+                  }
+                >
+                  View applications
+                </Link>
+              ) : null}
             </div>
             {listingActionError ? (
               <p className="prof-listings__error" role="alert">
@@ -1250,77 +1518,20 @@ export default function ProfilePage() {
                   const isReopening = reopeningListingId === listing.listingId
                   const isDeleting = deletingListingId === listing.listingId
 
+                  const listingReturnState = {
+                    returnTo: {
+                      path: '/profile#my-listings',
+                      label: 'Back to profile',
+                    },
+                  }
+
                   return (
                     <article key={listing.listingId} className="prof-listing-card">
-                      <div className="prof-listing-card__menu">
-                        <button
-                          type="button"
-                          className="prof-listing-card__menu-button"
-                          aria-label={`Open actions for ${listing.title}`}
-                          aria-expanded={openListingMenuId === listing.listingId}
-                          onClick={() =>
-                            setOpenListingMenuId((current) =>
-                              current === listing.listingId ? null : listing.listingId,
-                            )
-                          }
-                        >
-                          <span />
-                          <span />
-                          <span />
-                        </button>
-                        {openListingMenuId === listing.listingId ? (
-                          <div className="prof-listing-card__menu-popover">
-                            {isOpen ? (
-                              <>
-                                <Link
-                                  className="prof-listing-card__menu-item"
-                                  to={`/postings/${listing.listingId}/edit`}
-                                  onClick={() => {
-                                    setListingActionError('')
-                                    setOpenListingMenuId(null)
-                                  }}
-                                >
-                                  Edit listing
-                                </Link>
-                                <button
-                                  type="button"
-                                  className="prof-listing-card__menu-item"
-                                  onClick={() => {
-                                    setListingActionError('')
-                                    setListingToClose(listing)
-                                    setOpenListingMenuId(null)
-                                  }}
-                                  disabled={isClosing}
-                                >
-                                  {isClosing ? 'Closing...' : 'Close listing'}
-                                </button>
-                              </>
-                            ) : (
-                              <button
-                                type="button"
-                                className="prof-listing-card__menu-item"
-                                onClick={() => handleReopenListing(listing)}
-                                disabled={isReopening}
-                              >
-                                {isReopening ? 'Reopening...' : 'Reopen listing'}
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              className="prof-listing-card__menu-item prof-listing-card__menu-item--danger"
-                              onClick={() => {
-                                setListingActionError('')
-                                setListingToDelete(listing)
-                                setOpenListingMenuId(null)
-                              }}
-                              disabled={isDeleting}
-                            >
-                              {isDeleting ? 'Deleting...' : 'Delete listing'}
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                      <div className="prof-listing-card__main">
+                      <Link
+                        className="prof-listing-card__main prof-listing-card__main--link"
+                        to={`/postings/${listing.listingId}/applications`}
+                        state={listingReturnState}
+                      >
                         <div className="prof-listing-card__topline">
                           <span className="prof-listing-card__category">
                             {listing.category.replace('_', ' ')}
@@ -1335,20 +1546,76 @@ export default function ProfilePage() {
                         <p className="prof-listing-card__meta">
                           Created {formatRelativeTime(listing.createdAt)}
                         </p>
-                      </div>
-                      <div className="prof-listing-card__actions">
-                        <Link
-                          className="prof-btn prof-btn--outline"
-                          to={`/postings/${listing.listingId}/applications`}
-                          state={{
-                            returnTo: {
-                              path: '/profile#my-listings',
-                              label: 'Back to profile',
-                            },
-                          }}
-                        >
-                          View Applications
-                        </Link>
+                      </Link>
+                      <div className="prof-listing-card__rail">
+                        <div className="prof-listing-card__menu">
+                          <button
+                            type="button"
+                            className="prof-listing-card__menu-button"
+                            aria-label={`Open actions for ${listing.title}`}
+                            aria-expanded={openListingMenuId === listing.listingId}
+                            onClick={() =>
+                              setOpenListingMenuId((current) =>
+                                current === listing.listingId ? null : listing.listingId,
+                              )
+                            }
+                          >
+                            <span />
+                            <span />
+                            <span />
+                          </button>
+                          {openListingMenuId === listing.listingId ? (
+                            <div className="prof-listing-card__menu-popover">
+                              {isOpen ? (
+                                <>
+                                  <Link
+                                    className="prof-listing-card__menu-item"
+                                    to={`/postings/${listing.listingId}/edit`}
+                                    onClick={() => {
+                                      setListingActionError('')
+                                      setOpenListingMenuId(null)
+                                    }}
+                                  >
+                                    Edit listing
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    className="prof-listing-card__menu-item"
+                                    onClick={() => {
+                                      setListingActionError('')
+                                      setListingToClose(listing)
+                                      setOpenListingMenuId(null)
+                                    }}
+                                    disabled={isClosing}
+                                  >
+                                    {isClosing ? 'Closing...' : 'Close listing'}
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="prof-listing-card__menu-item"
+                                  onClick={() => handleReopenListing(listing)}
+                                  disabled={isReopening}
+                                >
+                                  {isReopening ? 'Reopening...' : 'Reopen listing'}
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                className="prof-listing-card__menu-item prof-listing-card__menu-item--danger"
+                                onClick={() => {
+                                  setListingActionError('')
+                                  setListingToDelete(listing)
+                                  setOpenListingMenuId(null)
+                                }}
+                                disabled={isDeleting}
+                              >
+                                {isDeleting ? 'Deleting...' : 'Delete listing'}
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
                         <span
                           className={
                             isOpen
@@ -1569,6 +1836,12 @@ export default function ProfilePage() {
           </div>
         </div>
       ) : null}
+
+      <AddProfileProjectModal
+        open={isAddProjectOpen}
+        onClose={() => setIsAddProjectOpen(false)}
+        onCreated={handleFeaturedProjectCreated}
+      />
     </div>
   )
 }

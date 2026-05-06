@@ -33,7 +33,7 @@ export default function LoginPage() {
 
   return (
     <div className="simple-page">
-      <main className="simple-page__main">
+      <main id="main-content" tabIndex={-1} className="simple-page__main">
         <p className="simple-page__back">
           <Link to="/">← Back</Link>
         </p>

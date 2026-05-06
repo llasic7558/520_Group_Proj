@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
+import NotificationBell from '../NotificationBell.jsx'
+import { useAuth } from '../../context/AuthContext.js'
+import { resolveProfileImageUrl } from '../../lib/profileImageUrl.js'
 import {
-  IconBell,
   IconPlus,
   IconSearch,
   LogoCap,
@@ -12,6 +14,8 @@ export function TopNav({
   searchValue,
   onSearchChange,
 }) {
+  const { user } = useAuth()
+  const avatarSrc = resolveProfileImageUrl(user?.profileImageUrl)
   const searchInputProps = onSearchChange
     ? {
         value: searchValue ?? '',
@@ -50,15 +54,22 @@ export function TopNav({
           <IconPlus />
           Create Posting
         </Link>
-        <button type="button" className="fcc-icon-btn" aria-label="Notifications">
-          <IconBell />
-        </button>
+        <NotificationBell />
         <Link
           to="/profile"
           className="fcc-avatar"
           aria-label="My profile"
         >
-          <span className="fcc-avatar__placeholder" />
+          {avatarSrc ? (
+            <img
+              src={avatarSrc}
+              alt=""
+              className="fcc-avatar__img"
+              decoding="async"
+            />
+          ) : (
+            <span className="fcc-avatar__placeholder" />
+          )}
         </Link>
       </div>
     </header>

@@ -4,7 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
-// flat eslint setup cursor/react template gave us
+// Flat ESLint config for Vite + React
 export default defineConfig([
   globalIgnores(['dist']),
   {

@@ -243,4 +243,37 @@
   .landing-section {
     max-width: 520px;
   }
+
+  .landing-hero {
+    margin-top: 2vh;
+  }
+
+  .landing-hero__image {
+    height: 240px;
+  }
+
+  .landing-hero__lede {
+    font-size: 1rem;
+  }
+
+  .simple-page__actions.landing-hero__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .landing-hero__actions .simple-btn {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .landing-hero__image {
+    height: 200px;
+  }
+
+  .landing-pill {
+    font-size: 0.82rem;
+    padding: 6px 10px;
+  }
 }
