@@ -178,6 +178,54 @@ describe('CreatePostingPage', () => {
     expect(await screen.findByText('Profile destination')).toBeInTheDocument()
   })
 
+  it('cancels editing without submitting an update', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn((url, init = {}) => {
+      const href = String(url)
+
+      if (
+        href.includes('/api/listings/listing-1') &&
+        (!init.method || init.method === 'GET')
+      ) {
+        return mockJsonResponse({
+          listing: {
+            listingId: 'listing-1',
+            title: 'Original title',
+            description: 'Original description',
+            category: 'project',
+            contactMethod: 'profile',
+            contactDetails: '',
+            status: 'open',
+            skills: [],
+          },
+        })
+      }
+
+      return mockJsonResponse({}, { status: 404 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/postings/:listingId/edit" element={<CreatePostingPage />} />
+        <Route path="/profile" element={<div>Profile destination</div>} />
+      </Routes>,
+      {
+        route: '/postings/listing-1/edit',
+      },
+    )
+
+    expect(await screen.findByDisplayValue('Original title')).toBeInTheDocument()
+    await user.clear(screen.getByLabelText('Title'))
+    await user.type(screen.getByLabelText('Title'), 'Unsaved title')
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(await screen.findByText('Profile destination')).toBeInTheDocument()
+    expect(
+      fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT'),
+    ).toBe(false)
+  })
+
   it('does not allow direct editing of a closed listing', async () => {
     vi.stubGlobal(
       'fetch',
