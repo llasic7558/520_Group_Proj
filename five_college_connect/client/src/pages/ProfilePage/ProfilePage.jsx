@@ -1530,8 +1530,17 @@ export default function ProfilePage() {
                     },
                   }
 
+                  const isMenuOpen = openListingMenuId === listing.listingId
+
                   return (
-                    <article key={listing.listingId} className="prof-listing-card">
+                    <article
+                      key={listing.listingId}
+                      className={
+                        isMenuOpen
+                          ? 'prof-listing-card prof-listing-card--menu-open'
+                          : 'prof-listing-card'
+                      }
+                    >
                       <Link
                         className="prof-listing-card__main prof-listing-card__main--link"
                         to={`/postings/${listing.listingId}/applications`}
@@ -1558,7 +1567,7 @@ export default function ProfilePage() {
                             type="button"
                             className="prof-listing-card__menu-button"
                             aria-label={`Open actions for ${listing.title}`}
-                            aria-expanded={openListingMenuId === listing.listingId}
+                            aria-expanded={isMenuOpen}
                             onClick={() =>
                               setOpenListingMenuId((current) =>
                                 current === listing.listingId ? null : listing.listingId,
@@ -1569,7 +1578,7 @@ export default function ProfilePage() {
                             <span />
                             <span />
                           </button>
-                          {openListingMenuId === listing.listingId ? (
+                          {isMenuOpen ? (
                             <div className="prof-listing-card__menu-popover">
                               {isOpen ? (
                                 <>

@@ -213,6 +213,10 @@ export default function CreatePostingPage() {
     }))
   }, [])
 
+  const handleCancelEdit = useCallback(() => {
+    navigate('/profile#my-listings', { replace: true })
+  }, [navigate])
+
   const handleSubmit = useCallback(async () => {
     if (!form.title.trim()) {
       logWarn('Listing save blocked because title is missing', {
@@ -276,6 +280,16 @@ export default function CreatePostingPage() {
           </Link>
         </div>
         <div className="cp-topnav__right">
+          {isEditingListing ? (
+            <button
+              type="button"
+              className="cp-btn cp-btn--outline"
+              onClick={handleCancelEdit}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+          ) : null}
           <button
             type="button"
             className="cp-btn cp-btn--primary"
