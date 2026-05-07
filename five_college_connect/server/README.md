@@ -130,7 +130,7 @@ keeps local tests and local development working without a live mail provider.
 
 Current backend endpoints:
 
-- verify email: `GET /api/auth/verify-email?token=...`
+- verify email: `POST /api/auth/verify-email` with `{ "token": "..." }`
 - resend verification email: `POST /api/auth/verify-email/resend`
 
 Recommended local frontend URL:
@@ -139,34 +139,21 @@ Recommended local frontend URL:
 http://localhost:3000/verify-email
 ```
 
-Temporary backend-only testing URL:
-
-```text
-http://localhost:4000/api/auth/verify-email
-```
-
-How the ideal flow works:
+How the flow works:
 
 1. signup creates an unverified user and saves a verification token
 2. the backend emails a link built from `EMAIL_VERIFICATION_BASE_URL`
 3. the user clicks the frontend route such as `http://localhost:3000/verify-email?token=...`
-4. the frontend reads the `token` from the URL and calls `GET /api/auth/verify-email?token=...`
-5. the backend validates the token and updates `users.email_verified` to `TRUE`
-
-Before the frontend `/verify-email` page exists, you can temporarily point
-`EMAIL_VERIFICATION_BASE_URL` at the backend route:
-
-```env
-EMAIL_VERIFICATION_BASE_URL=http://localhost:4000/api/auth/verify-email
-```
-
-That makes the email link go straight to the backend so the full verification
-flow can be tested without client work.
+4. the frontend reads the `token` from the URL and waits for the user to submit
+5. the frontend calls `POST /api/auth/verify-email` with `{ "token": "..." }`
+6. the backend validates the token and updates `users.email_verified` to `TRUE`
 
 Note:
 
-- after the frontend `/verify-email` page is implemented, switch it back to
-  `EMAIL_VERIFICATION_BASE_URL=http://localhost:3000/verify-email`
+- keep `EMAIL_VERIFICATION_BASE_URL` pointed at the frontend
+  `/verify-email` route. The backend verification endpoint is intentionally a
+  `POST` so email scanners and link previews cannot verify accounts by visiting
+  a link.
 
 For quick local email testing with Mailjet, verify a sender address in your
 Mailjet account and then use that exact address in `EMAIL_FROM`. For example:
@@ -192,7 +179,7 @@ The client should call these endpoints:
 
 - signup: `POST /api/auth/signup`
 - signin: `POST /api/auth/signin`
-- verify email: `GET /api/auth/verify-email?token=...`
+- verify email: `POST /api/auth/verify-email`
 - resend verification email: `POST /api/auth/verify-email/resend`
 - get profile: `GET /api/profiles/:userId`
 - update profile: `PUT /api/profiles/:userId`

@@ -5,8 +5,7 @@ import { useAuth } from '../../context/AuthContext.js'
 import '../shared/simplePages.css'
 import './VerifyEmailPage.css'
 
-// Prevents double verification: React 18 Strict Mode runs effects twice in dev,
-// and some email clients prefetch links — both can consume a one-time token.
+// Prevents double submits while the verify request is in flight.
 const verifyAttemptInFlight = new Set()
 
 function useQuery() {
@@ -20,11 +19,26 @@ function isTokenAlreadyUsedError(err) {
     .includes('already been used')
 }
 
+function getSafeReturnTo(value, fallback = '/opportunities') {
+  if (typeof value !== 'string') return fallback
+  if (!value.startsWith('/') || value.startsWith('//')) return fallback
+  if (value.startsWith('/verify-email')) return fallback
+  return value
+}
+
+function getReturnLabel(path) {
+  if (path.startsWith('/profile')) return 'profile'
+  if (path.startsWith('/signup')) return 'sign up'
+  return 'opportunities'
+}
+
 export default function VerifyEmailPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const query = useQuery()
   const { user, updateUser } = useAuth()
+  const returnTo = getSafeReturnTo(location.state?.returnTo)
+  const returnLabel = getReturnLabel(returnTo)
 
   const [token, setToken] = useState(() => query.get('token') || '')
   const [status, setStatus] = useState('idle') // idle | verifying | verified | error
@@ -40,7 +54,7 @@ export default function VerifyEmailPage() {
     }
     setStatus('verified')
     setMessage(redirectMessage)
-    setTimeout(() => navigate('/opportunities', { replace: true }), 800)
+    setTimeout(() => navigate(returnTo, { replace: true }), 800)
   }
 
   async function submitVerification(nextToken) {
@@ -59,13 +73,14 @@ export default function VerifyEmailPage() {
     setStatus('verifying')
     setMessage('')
     try {
-      const result = await apiRequest(
-        `/api/auth/verify-email?token=${encodeURIComponent(trimmed)}`,
-      )
+      const result = await apiRequest('/api/auth/verify-email', {
+        method: 'POST',
+        body: { token: trimmed },
+      })
       if (result?.user) updateUser(result.user)
       setStatus('verified')
       setMessage('Email verified. Redirecting…')
-      setTimeout(() => navigate('/opportunities', { replace: true }), 800)
+      setTimeout(() => navigate(returnTo, { replace: true }), 800)
     } catch (err) {
       if (isTokenAlreadyUsedError(err)) {
         finishAsVerified('Your email is already verified. Redirecting…')
@@ -98,18 +113,16 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     const urlToken = query.get('token')?.trim()
     if (urlToken && urlToken !== token) setToken(urlToken)
-    if (urlToken) {
-      // Opening the emailed link should verify immediately; the input remains
-      // as a fallback for users who paste a token manually.
-      void submitVerification(urlToken)
-    }
-    // Only re-run when the link query changes (not on every token keystroke).
+    // Only sync the link token into the input. Verification requires submit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search])
 
   return (
     <div className="simple-page">
       <main id="main-content" tabIndex={-1} className="simple-page__main simple-page__main--center">
+        <p className="simple-page__back verify-email__back">
+          <Link to={returnTo}>{`← Back to ${returnLabel}`}</Link>
+        </p>
         <h1 className="simple-page__title">Verify your email</h1>
         <p className="simple-page__lede">
           {email

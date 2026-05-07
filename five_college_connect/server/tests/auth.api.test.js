@@ -276,7 +276,7 @@ test("POST /api/auth/signup allows the same username when emails are different",
   assert.equal(secondResponse.body.user.email, SECOND_DUPLICATE_EMAIL);
 });
 
-test("GET /api/auth/verify-email marks a user's email as verified", async () => {
+test("POST /api/auth/verify-email marks a user's email as verified", async () => {
   await deleteVerificationTokensByEmail(TEST_EMAIL);
   await deleteTestUser();
 
@@ -312,9 +312,10 @@ test("GET /api/auth/verify-email marks a user's email as verified", async () => 
 
   assert.equal(tokenResult.rowCount, 1);
 
-  const verifyResponse = await requestJson(
-    `/api/auth/verify-email?token=${encodeURIComponent(tokenResult.rows[0].token)}`
-  );
+  const verifyResponse = await requestJson("/api/auth/verify-email", {
+    method: "POST",
+    body: { token: tokenResult.rows[0].token }
+  });
 
   assert.equal(verifyResponse.status, 200);
   assert.equal(verifyResponse.body.message, "Email verified successfully");
@@ -327,9 +328,10 @@ test("GET /api/auth/verify-email marks a user's email as verified", async () => 
 
   assert.equal(savedUserResult.rows[0].email_verified, true);
 
-  const reusedResponse = await requestJson(
-    `/api/auth/verify-email?token=${encodeURIComponent(tokenResult.rows[0].token)}`
-  );
+  const reusedResponse = await requestJson("/api/auth/verify-email", {
+    method: "POST",
+    body: { token: tokenResult.rows[0].token }
+  });
 
   assert.equal(reusedResponse.status, 400);
   assert.equal(reusedResponse.body.message, "Verification token has already been used");
