@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import ProfilePage from '../pages/ProfilePage/ProfilePage.jsx'
+import ProfilePage from '../src/pages/ProfilePage/ProfilePage.jsx'
 import {
   createAuthValue,
   mockJsonResponse,
@@ -9,6 +9,7 @@ import {
 } from './test-utils.jsx'
 
 function buildProfileResponse({ skills = [], courses = [] } = {}) {
+  // Mirrors the normalized profile shape returned by the API.
   return {
     profileId: 'profile-1',
     userId: 'user-1',
@@ -78,6 +79,8 @@ describe('ProfilePage', () => {
       vi.fn((url) => {
         const href = String(url)
 
+        // ProfilePage fans out to several endpoints; keep each mocked response
+        // scoped to the same user so recent activity is built from matching data.
         if (href.includes('/api/profiles/user-1')) {
           return mockJsonResponse({
             profile: buildProfileResponse(),
@@ -207,6 +210,7 @@ describe('ProfilePage', () => {
     const user = userEvent.setup({ delay: null })
     let savedPayload = null
 
+    // Capture the PUT body so the test verifies the API contract, not just UI text.
     vi.stubGlobal(
       'fetch',
       vi.fn((url, init) => {

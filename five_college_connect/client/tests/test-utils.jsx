@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
-import { AuthContext } from '../context/AuthContext.js'
+import { AuthContext } from '../src/context/AuthContext.js'
 
 export function createAuthValue(overrides = {}) {
   return {
@@ -20,6 +20,7 @@ export function renderWithProviders(
   ui,
   { route = '/', authValue = createAuthValue() } = {},
 ) {
+  // Most page tests need the same auth context and router shell.
   return render(
     <AuthContext.Provider value={authValue}>
       <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
@@ -28,6 +29,7 @@ export function renderWithProviders(
 }
 
 export function mockJsonResponse(body, { status = 200 } = {}) {
+  // Keep fetch mocks close to the browser Response shape used by apiRequest().
   return Promise.resolve(
     new Response(JSON.stringify(body), {
       status,

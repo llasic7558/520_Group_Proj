@@ -47,6 +47,7 @@ async function deleteUserByEmail(email) {
 }
 
 async function deleteVerificationTokensByEmail(email) {
+  // Tokens reference users, so remove them before deleting test accounts.
   await query(
     `
       DELETE FROM email_verification_tokens
@@ -63,6 +64,7 @@ async function deleteVerificationTokensByEmail(email) {
 test.before(async () => {
   await testDatabaseConnection();
 
+  // Bind to an ephemeral port so API tests can run beside a local dev server.
   server = app.listen(0);
 
   await new Promise((resolve) => {

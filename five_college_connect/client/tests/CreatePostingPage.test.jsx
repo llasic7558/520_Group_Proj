@@ -2,7 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import CreatePostingPage from '../pages/CreatePostingPage/CreatePostingPage.jsx'
+import CreatePostingPage from '../src/pages/CreatePostingPage/CreatePostingPage.jsx'
 import { mockJsonResponse, renderWithProviders } from './test-utils.jsx'
 
 describe('CreatePostingPage', () => {
@@ -87,6 +87,7 @@ describe('CreatePostingPage', () => {
     const user = userEvent.setup()
     let updatedPayload = null
 
+    // This test exercises both sides of edit mode: initial GET and final PUT.
     vi.stubGlobal(
       'fetch',
       vi.fn((url, init = {}) => {
@@ -221,6 +222,7 @@ describe('CreatePostingPage', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
     expect(await screen.findByText('Profile destination')).toBeInTheDocument()
+    // Cancel is a pure navigation action; it must not persist draft form state.
     expect(
       fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT'),
     ).toBe(false)

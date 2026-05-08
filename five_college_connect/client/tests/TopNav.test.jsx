@@ -2,7 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { TopNav } from '../components/opportunities/TopNav.jsx'
+import { TopNav } from '../src/components/opportunities/TopNav.jsx'
 import {
   createAuthValue,
   mockJsonResponse,

@@ -24,6 +24,7 @@ function isOwnerListingNotification(item) {
 }
 
 async function listOwnerListingNotifications({ unreadOnly = false } = {}) {
+  // Filter by the test listing title because the seeded owner may already have notifications.
   const searchParams = new URLSearchParams({
     limit: "50"
   });
@@ -102,6 +103,7 @@ async function deleteSelfListing() {
 }
 
 async function createTestApplication() {
+  // Creating an application is the user action that should create an owner notification.
   const response = await requestJson("/api/applications", {
     method: "POST",
     token: applicantToken,

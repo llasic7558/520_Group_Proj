@@ -25,6 +25,7 @@ export class ApplicationService {
         applicantUserId: currentUser.userId
       }, client);
 
+      // Owners do not need notifications for applications they submit to themselves.
       if (listing.createdByUserId !== currentUser.userId) {
         await this.notificationRepository.createNotification(
           {

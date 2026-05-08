@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import LandingPage from '../pages/LandingPage/LandingPage.jsx'
+import LandingPage from '../src/pages/LandingPage/LandingPage.jsx'
 import { renderWithProviders } from './test-utils.jsx'
 
 describe('LandingPage', () => {

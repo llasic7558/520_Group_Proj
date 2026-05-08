@@ -2,7 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import VerifyEmailPage from '../pages/VerifyEmailPage/VerifyEmailPage.jsx'
+import VerifyEmailPage from '../src/pages/VerifyEmailPage/VerifyEmailPage.jsx'
 import {
   createAuthValue,
   mockJsonResponse,
@@ -10,6 +10,7 @@ import {
 } from './test-utils.jsx'
 
 function renderVerifyEmailPage({ route = '/verify-email', authValue } = {}) {
+  // Give the verification page real route targets so redirect behavior is testable.
   return renderWithProviders(
     <Routes>
       <Route path="/verify-email" element={<VerifyEmailPage />} />
@@ -63,6 +64,7 @@ describe('VerifyEmailPage', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn((url, init) => {
+        // URL tokens should prefill the form but should not submit until clicked.
         expect(String(url)).toContain('/api/auth/verify-email')
         expect(init.method).toBe('POST')
         expect(JSON.parse(init.body)).toEqual({ token: 'url-token-1' })

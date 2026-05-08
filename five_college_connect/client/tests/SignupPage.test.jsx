@@ -2,7 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import SignupPage from '../pages/SignupPage/SignupPage.jsx'
+import SignupPage from '../src/pages/SignupPage/SignupPage.jsx'
 import { createAuthValue, renderWithProviders } from './test-utils.jsx'
 
 describe('SignupPage', () => {
