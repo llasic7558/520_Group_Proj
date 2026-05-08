@@ -76,7 +76,7 @@ export async function signIn(req, res, next) {
 
 export async function verifyEmail(req, res, next) {
   try {
-    const result = await accountService.verifyEmailToken(req.query.token);
+    const result = await accountService.verifyEmailToken(req.body?.token);
 
     res.status(200).json({
       message: "Email verified successfully",

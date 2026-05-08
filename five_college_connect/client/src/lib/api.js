@@ -137,6 +137,14 @@ export async function createListing(body) {
   return payload?.listing ?? null
 }
 
+export async function updateListing(listingId, body) {
+  const payload = await apiRequest(`/api/listings/${listingId}`, {
+    method: 'PUT',
+    body,
+  })
+  return payload?.listing ?? null
+}
+
 export async function fetchListing(listingId) {
   const payload = await apiRequest(`/api/listings/${listingId}`)
   return payload?.listing ?? null
@@ -183,6 +191,30 @@ export async function updateApplicationStatus(applicationId, status) {
     body: { status },
   })
   return payload?.application ?? null
+}
+
+export async function fetchNotifications(filters = {}) {
+  const payload = await apiRequest(
+    `/api/notifications${buildQueryString(filters)}`,
+  )
+
+  return {
+    items: payload?.items ?? [],
+    unreadCount: payload?.unreadCount ?? 0,
+  }
+}
+
+export async function markNotificationAsRead(notificationId) {
+  const payload = await apiRequest(`/api/notifications/${notificationId}/read`, {
+    method: 'PATCH',
+  })
+  return payload?.notification ?? null
+}
+
+export async function markAllNotificationsAsRead() {
+  return apiRequest('/api/notifications/read-all', {
+    method: 'PATCH',
+  })
 }
 
 export async function fetchProfile(userId) {

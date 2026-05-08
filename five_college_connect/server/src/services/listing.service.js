@@ -70,6 +70,11 @@ export class ListingService {
 
       ensureOwnerOrAdmin(currentUser, existingListing.createdByUserId, "listing");
 
+      // Closed listings must be explicitly reopened before their content changes.
+      if (existingListing.status === "closed") {
+        throw createHttpError(409, "Closed listings cannot be edited. Reopen the listing first.");
+      }
+
       const updatedListing = await this.listingRepository.updateListing(listingId, payload, client);
       return this.buildListingDetails(updatedListing, payload, client, true);
     });
@@ -138,6 +143,7 @@ export class ListingService {
   ) {
     if (payload?.skills) {
       if (replaceRelations) {
+        // Updates replace the whole skill set so removed tags disappear too.
         await this.listingSkillRepository.deleteByListingId(listing.listingId, executor);
       }
 
@@ -163,6 +169,7 @@ export class ListingService {
 
     if (payload?.attachments) {
       if (replaceRelations) {
+        // Attachments follow the same replace-all contract as listing skills.
         await this.listingAttachmentRepository.deleteByListingId(listing.listingId, executor);
       }
 

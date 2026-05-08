@@ -1,6 +1,9 @@
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import NotificationBell from '../NotificationBell.jsx'
+import { useAuth } from '../../context/AuthContext.js'
+import { resolveProfileImageUrl } from '../../lib/profileImageUrl.js'
 import {
-  IconBell,
   IconPlus,
   IconSearch,
   LogoCap,
@@ -12,12 +15,47 @@ export function TopNav({
   searchValue,
   onSearchChange,
 }) {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const menuRef = useRef(null)
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
+  const avatarSrc = resolveProfileImageUrl(user?.profileImageUrl)
   const searchInputProps = onSearchChange
     ? {
         value: searchValue ?? '',
         onChange: onSearchChange,
       }
     : {}
+
+  useEffect(() => {
+    if (!isProfileMenuOpen) return undefined
+
+    function handlePointerDown(event) {
+      if (!menuRef.current?.contains(event.target)) {
+        setIsProfileMenuOpen(false)
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setIsProfileMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isProfileMenuOpen])
+
+  function handleLogout() {
+    logout()
+    setIsProfileMenuOpen(false)
+    navigate('/login', { replace: true })
+  }
 
   return (
     <header className="fcc-topnav">
@@ -50,16 +88,48 @@ export function TopNav({
           <IconPlus />
           Create Posting
         </Link>
-        <button type="button" className="fcc-icon-btn" aria-label="Notifications">
-          <IconBell />
-        </button>
-        <Link
-          to="/profile"
-          className="fcc-avatar"
-          aria-label="My profile"
-        >
-          <span className="fcc-avatar__placeholder" />
-        </Link>
+        <NotificationBell />
+        <div className="fcc-profile-menu" ref={menuRef}>
+          <button
+            type="button"
+            className="fcc-avatar"
+            aria-label="Open profile menu"
+            aria-haspopup="menu"
+            aria-expanded={isProfileMenuOpen}
+            onClick={() => setIsProfileMenuOpen((current) => !current)}
+          >
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt=""
+                className="fcc-avatar__img"
+                decoding="async"
+              />
+            ) : (
+              <span className="fcc-avatar__placeholder" />
+            )}
+          </button>
+          {isProfileMenuOpen ? (
+            <div className="fcc-profile-menu__panel" role="menu">
+              <Link
+                to="/profile"
+                className="fcc-profile-menu__item"
+                role="menuitem"
+                onClick={() => setIsProfileMenuOpen(false)}
+              >
+                View profile
+              </Link>
+              <button
+                type="button"
+                className="fcc-profile-menu__item fcc-profile-menu__item--danger"
+                role="menuitem"
+                onClick={handleLogout}
+              >
+                Log out
+              </button>
+            </div>
+          ) : null}
+        </div>
       </div>
     </header>
   )

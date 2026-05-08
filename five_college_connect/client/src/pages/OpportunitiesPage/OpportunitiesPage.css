@@ -147,6 +147,60 @@
   background: linear-gradient(135deg, #e8e8e8, #cfcfcf);
 }
 
+.fcc-avatar__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fcc-profile-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.fcc-profile-menu__panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  min-width: 160px;
+  padding: 6px;
+  border: 1px solid var(--fcc-border);
+  border-radius: 8px;
+  background: var(--fcc-card);
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.14);
+}
+
+.fcc-profile-menu__item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fcc-text);
+  font-family: var(--fcc-font);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.fcc-profile-menu__item:hover,
+.fcc-profile-menu__item:focus-visible {
+  background: rgba(128, 48, 48, 0.08);
+  outline: none;
+}
+
+.fcc-profile-menu__item--danger {
+  color: var(--fcc-maroon);
+}
+
 /* ——— Buttons ——— */
 .fcc-btn {
   display: inline-flex;
@@ -437,6 +491,22 @@ a.fcc-btn {
   color: var(--fcc-text);
 }
 
+.fcc-detail__subhead {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.fcc-detail__subhead-line {
+  width: 100%;
+}
+
+.fcc-detail__subhead-line--meta .fcc-meta-item {
+  display: inline-flex;
+}
+
 .fcc-detail__actions {
   display: flex;
   gap: 4px;
@@ -444,7 +514,7 @@ a.fcc-btn {
 
 .fcc-detail__poster {
   display: inline-flex;
-  margin: 8px 0 14px;
+  margin: 0;
   padding: 0;
   border: none;
   background: transparent;
@@ -464,12 +534,6 @@ a.fcc-btn {
 .fcc-detail__poster:disabled,
 .fcc-profile-trigger:disabled {
   cursor: default;
-}
-
-.fcc-detail__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 20px;
 }
 
 .fcc-detail__sections {
@@ -586,6 +650,12 @@ ul.fcc-listing-meta {
   border-radius: 50%;
   background: linear-gradient(135deg, #ddd, #bbb);
   flex-shrink: 0;
+}
+
+.fcc-poster-card__avatar--photo {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .fcc-poster-card__avatar--button {

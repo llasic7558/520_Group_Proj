@@ -31,6 +31,7 @@ function ignoreDuplicateSetupError(error) {
 async function applyCompatibilityMigrations() {
   if (!compatibilityMigrationPromise) {
     compatibilityMigrationPromise = (async () => {
+      // Local/dev databases may predate migrations committed later on
       await query(`
         ALTER TABLE users
         DROP CONSTRAINT IF EXISTS users_username_key
@@ -84,6 +85,7 @@ export async function withTransaction(callback) {
 }
 
 export async function testDatabaseConnection() {
+  // Health checks also make sure older local databases can run current queries.
   await applyCompatibilityMigrations();
   const result = await query("SELECT NOW() AS connected_at");
   return result.rows[0];

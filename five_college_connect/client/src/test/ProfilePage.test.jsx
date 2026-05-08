@@ -27,7 +27,52 @@ function buildProfileResponse({ skills = [], courses = [] } = {}) {
 }
 
 describe('ProfilePage', () => {
+  it('shows the email verification banner for an unverified user', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url) => {
+        const href = String(url)
+
+        if (href.includes('/api/profiles/user-1')) {
+          return mockJsonResponse({
+            profile: buildProfileResponse(),
+          })
+        }
+
+        if (href.includes('/api/listings?createdByUserId=user-1&limit=10')) {
+          return mockJsonResponse({ items: [] })
+        }
+
+        if (href.includes('/api/applications?limit=10')) {
+          return mockJsonResponse({ items: [] })
+        }
+
+        throw new Error(`Unhandled fetch URL: ${href}`)
+      }),
+    )
+
+    renderWithProviders(<ProfilePage />, {
+      route: '/profile',
+      authValue: createAuthValue({
+        user: {
+          id: 'user-1',
+          email: 'alex@umass.edu',
+          emailVerified: false,
+        },
+        isAuthenticated: true,
+      }),
+    })
+
+    expect(
+      await screen.findByText(/Please verify your school email/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Resend and verify →' }),
+    ).toBeInTheDocument()
+  })
+
   it('renders project postings and recent activity from user-scoped API data', async () => {
+    const user = userEvent.setup({ delay: null })
     vi.stubGlobal(
       'fetch',
       vi.fn((url) => {
@@ -51,11 +96,27 @@ describe('ProfilePage', () => {
                 skills: [{ name: 'React' }],
               },
               {
+                listingId: 'project-2',
+                title: 'Campus Event Finder',
+                description: 'Second featured project.',
+                category: 'project',
+                createdAt: '2026-04-22T12:00:00.000Z',
+                skills: [{ name: 'React Native' }],
+              },
+              {
+                listingId: 'project-3',
+                title: 'Study Analytics Dashboard',
+                description: 'Third featured project.',
+                category: 'project',
+                createdAt: '2026-04-21T12:00:00.000Z',
+                skills: [{ name: 'Python' }],
+              },
+              {
                 listingId: 'tutoring-1',
                 title: 'Algorithms Tutor',
                 description: 'Help with problem sets.',
                 category: 'tutoring',
-                createdAt: '2026-04-22T12:00:00.000Z',
+                createdAt: '2026-04-20T12:00:00.000Z',
                 skills: [],
               },
             ],
@@ -112,6 +173,15 @@ describe('ProfilePage', () => {
       within(featuredProjectsSection).getByText('Project Showcase'),
     ).toBeInTheDocument()
     expect(
+      within(featuredProjectsSection).queryByRole('button', { name: '+ Add Project' }),
+    ).not.toBeInTheDocument()
+    expect(
+      within(featuredProjectsSection).getByRole('button', { name: 'View All (3)' }),
+    ).toBeInTheDocument()
+    expect(
+      within(featuredProjectsSection).queryByText('Study Analytics Dashboard'),
+    ).not.toBeInTheDocument()
+    expect(
       within(featuredProjectsSection).getByText('A real project posting.'),
     ).toBeInTheDocument()
     expect(
@@ -124,10 +194,17 @@ describe('ProfilePage', () => {
     expect(
       screen.getByText('Created a project posting: Project Showcase'),
     ).toBeInTheDocument()
+
+    await user.click(
+      within(featuredProjectsSection).getByRole('button', { name: 'View All (3)' }),
+    )
+    expect(
+      within(featuredProjectsSection).getByText('Study Analytics Dashboard'),
+    ).toBeInTheDocument()
   })
 
   it('lets the user add a skill and course, then saves them to the profile API', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     let savedPayload = null
 
     vi.stubGlobal(
@@ -245,5 +322,99 @@ describe('ProfilePage', () => {
 
     const courseCard = screen.getByText(/COMPSCI 520 Software Engineering/)
     expect(within(courseCard.closest('.prof-course-card')).getByText('A')).toBeInTheDocument()
+  }, 15_000)
+
+  it('creates a featured project from the Add Project modal', async () => {
+    const user = userEvent.setup({ delay: null })
+    localStorage.setItem('fcc.token', 'test-jwt')
+
+    let postPayload = null
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url, init) => {
+        const href = String(url)
+
+        if (href.includes('/api/profiles/user-1') && (!init || init.method === 'GET')) {
+          return mockJsonResponse({
+            profile: buildProfileResponse(),
+          })
+        }
+
+        if (href.includes('/api/listings?createdByUserId=user-1&limit=10')) {
+          return mockJsonResponse({ items: [] })
+        }
+
+        if (href.includes('/api/applications?limit=10')) {
+          return mockJsonResponse({ items: [] })
+        }
+
+        if (href.includes('/api/listings') && init?.method === 'POST') {
+          postPayload = JSON.parse(init.body)
+          return mockJsonResponse(
+            {
+              listing: {
+                listingId: 'proj-new-1',
+                title: postPayload.title,
+                description: postPayload.description,
+                category: 'project',
+                status: 'open',
+                createdAt: '2026-05-02T12:00:00.000Z',
+                bannerImageUrl: postPayload.banner_image_url || '',
+                skills: (postPayload.skills || []).map((s, i) => ({
+                  name: s.name,
+                  skillId: `skill-${i}`,
+                })),
+              },
+            },
+            { status: 201 },
+          )
+        }
+
+        throw new Error(`Unhandled fetch URL: ${href}`)
+      }),
+    )
+
+    renderWithProviders(<ProfilePage />, {
+      authValue: createAuthValue({
+        user: {
+          id: 'user-1',
+          email: 'alex@umass.edu',
+          emailVerified: true,
+        },
+        isAuthenticated: true,
+        token: 'test-jwt',
+      }),
+    })
+
+    expect(await screen.findByText('Builder and collaborator.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Edit Profile' }))
+    await user.click(screen.getByRole('button', { name: '+ Add Project' }))
+
+    await user.type(screen.getByLabelText('Title'), 'Portfolio App')
+    await user.type(
+      screen.getByLabelText('Description'),
+      'A portfolio project for class.',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Add project' }))
+
+    await waitFor(() => {
+      expect(postPayload).toMatchObject({
+        title: 'Portfolio App',
+        category: 'project',
+        contact_method: 'profile',
+      })
+    })
+
+    const featuredSection = (await screen.findByText('Featured Projects')).closest(
+      '.prof-section',
+    )
+    expect(
+      await within(featuredSection).findByText('Portfolio App'),
+    ).toBeInTheDocument()
+
+    localStorage.removeItem('fcc.token')
   })
 })
