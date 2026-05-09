@@ -38,6 +38,7 @@ function normalizeExpirationDate(value) {
 
 function normalizeListingStatus(value) {
   const normalized = normalizeString(value || "open").toLowerCase();
+  // Earlier demo data used "published"; keep API callers on the current "open" status.
   return normalized === "published" ? "open" : normalized;
 }
 

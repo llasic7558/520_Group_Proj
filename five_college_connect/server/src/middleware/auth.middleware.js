@@ -31,6 +31,7 @@ export function requireAuth(req, _res, next) {
 
 export async function requireVerifiedEmail(req, _res, next) {
   try {
+    // Re-read the user so verification checks do not rely on stale token data.
     const user = await userRepository.findById(req.user?.userId);
 
     if (!user) {

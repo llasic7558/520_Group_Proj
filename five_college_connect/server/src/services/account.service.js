@@ -36,6 +36,8 @@ export class AccountService {
 
     const passwordHash = await this.authenticationService.hashPassword(password);
 
+    // Create the user, profile, skills, and courses atomically so registration
+    // cannot leave behind a partial account if one relationship insert fails.
     const { user, fullProfile } = await withTransaction(async (client) => {
       const createdUser = await this.userRepository.createUser(
         {

@@ -56,6 +56,7 @@ export class ApplicationService {
       }
 
       if (listing.createdByUserId !== currentUser.userId) {
+        // Non-owners can only see their own application for a listing.
         safeFilters.applicantUserId = currentUser.userId;
       }
     } else {

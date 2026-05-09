@@ -5,6 +5,7 @@ function normalizeString(value) {
 }
 
 function normalizePayload(payload) {
+  // Accept both API camelCase and database-style snake_case field names.
   return {
     listingId: normalizeString(payload.listingId || payload.listing_id),
     applicantUserId: normalizeString(payload.applicantUserId || payload.applicant_user_id),

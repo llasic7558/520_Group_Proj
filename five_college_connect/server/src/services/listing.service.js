@@ -40,8 +40,10 @@ export class ListingService {
     const listings = await this.listingRepository.listListings(
       {
         ...filters,
+        // "All" is a UI category, not a database category.
         category: normalizedCategory.toLowerCase() === "all" ? "" : normalizedCategory,
         query: normalizedQuery,
+        // UUID-looking searches should match exact listing IDs instead of title text.
         isListingIdSearch: UUID_PATTERN.test(normalizedQuery)
       },
       safeExecutor.query ? safeExecutor : undefined
@@ -197,6 +199,7 @@ export class ListingService {
     const listingIds = listings.map((listing) => listing.listingId);
     const creatorIds = [...new Set(listings.map((listing) => listing.createdByUserId))];
 
+    // Batch related data once per collection to avoid N+1 queries on the feed.
     const skillsByListingId = await this.listingSkillRepository.findByListingIds(listingIds, executor);
     const attachmentsByListingId = await this.listingAttachmentRepository.findByListingIds(
       listingIds,
