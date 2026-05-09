@@ -2,6 +2,7 @@ import { NotificationRepository } from "../repositories/notification.repository.
 import { createHttpError } from "../utils/http-error.js";
 
 function parseUnreadOnly(value) {
+  // Query parameters arrive as strings, but tests may call the service directly.
   if (typeof value === "boolean") {
     return value;
   }

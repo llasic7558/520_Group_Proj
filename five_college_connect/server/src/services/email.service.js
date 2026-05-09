@@ -66,6 +66,7 @@ export class EmailService {
     this.validateConfiguration();
 
     if (!this.mailjet) {
+      // Local development can still verify accounts by copying the logged link.
       console.info(`Email verification link for ${to}: ${verificationUrl}`);
       return {
         skipped: true,

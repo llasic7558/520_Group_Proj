@@ -25,6 +25,7 @@ export class ApplicationService {
         applicantUserId: currentUser.userId
       }, client);
 
+      // Owners do not need notifications for applications they submit to themselves.
       if (listing.createdByUserId !== currentUser.userId) {
         await this.notificationRepository.createNotification(
           {
@@ -55,6 +56,7 @@ export class ApplicationService {
       }
 
       if (listing.createdByUserId !== currentUser.userId) {
+        // Non-owners can only see their own application for a listing.
         safeFilters.applicantUserId = currentUser.userId;
       }
     } else {

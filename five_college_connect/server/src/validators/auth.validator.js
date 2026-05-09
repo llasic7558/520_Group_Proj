@@ -5,6 +5,7 @@ function ensureString(value) {
 }
 
 export function validateSignUpPayload(payload) {
+  // Normalize email/role once so downstream auth checks compare stable values.
   const email = ensureString(payload.email).toLowerCase();
   const username = ensureString(payload.username);
   const password = ensureString(payload.password);

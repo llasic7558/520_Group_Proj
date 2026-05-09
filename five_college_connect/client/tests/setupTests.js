@@ -3,6 +3,7 @@ import { cleanup } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
 
 function createStorage() {
+  // JSDOM storage can leak state between tests, so each test gets a fresh map.
   const store = new Map()
 
   return {
@@ -22,6 +23,7 @@ function createStorage() {
 }
 
 beforeEach(() => {
+  // Silence expected log noise while preserving explicit assertions on UI errors.
   vi.spyOn(console, 'info').mockImplementation(() => {})
   vi.spyOn(console, 'warn').mockImplementation(() => {})
   vi.spyOn(console, 'error').mockImplementation(() => {})

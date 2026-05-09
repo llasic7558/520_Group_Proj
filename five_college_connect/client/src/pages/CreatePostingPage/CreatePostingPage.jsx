@@ -214,6 +214,7 @@ export default function CreatePostingPage() {
   }, [])
 
   const handleCancelEdit = useCallback(() => {
+    // Cancel intentionally navigates away without calling the update API.
     navigate('/profile#my-listings', { replace: true })
   }, [navigate])
 

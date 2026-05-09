@@ -9,6 +9,7 @@ export function errorHandler(err, _req, res, _next) {
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal server error";
 
+  // Client errors are expected control flow; server errors keep the stack trace.
   if (statusCode >= 500) {
     logError("Unhandled server error", {
       statusCode,

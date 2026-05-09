@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import ProfilePreviewModal from '../components/ProfilePreviewModal.jsx'
+import ProfilePreviewModal from '../src/components/ProfilePreviewModal.jsx'
 import { renderWithProviders } from './test-utils.jsx'
 
 describe('ProfilePreviewModal', () => {

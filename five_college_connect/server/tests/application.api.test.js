@@ -66,6 +66,7 @@ async function getUserIdByEmail(email) {
 }
 
 async function createTestApplication(token = applicantToken, message = TEST_MESSAGE) {
+  // Use the seeded Sarah Johnson listing so owner/applicant authorization can be tested.
   return requestJson("/api/applications", {
     method: "POST",
     token,
@@ -82,6 +83,7 @@ async function deleteTestApplications() {
 }
 
 async function deleteTestNotifications() {
+  // Application tests create owner notifications as a side effect.
   await query("DELETE FROM notifications WHERE message = $1", [TEST_NOTIFICATION_MESSAGE]);
 }
 

@@ -67,6 +67,7 @@ async function getUserIdByEmail(email) {
 }
 
 async function deleteTestListings() {
+  // Keep cleanup narrow so seeded demo listings stay available for other tests.
   await query("DELETE FROM listings WHERE title LIKE $1", ["API Test Listing%"]);
 }
 
@@ -89,6 +90,7 @@ async function deleteVerificationTokensByEmail(email) {
 }
 
 async function createTestListing(title = TEST_TITLE, token = ownerToken) {
+  // Include skills and attachments so list/get/update tests cover related tables too.
   return requestJson("/api/listings", {
     method: "POST",
     token,

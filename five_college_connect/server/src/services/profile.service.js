@@ -38,6 +38,7 @@ export class ProfileService {
 
       const updatedProfile = await this.profileRepository.updateByUserId(userId, payload, client);
 
+      // Profile edits replace these relationship lists, matching the client form.
       await this.userSkillRepository.deleteByProfileId(existingProfile.profileId, client);
       await this.userCourseRepository.deleteByProfileId(existingProfile.profileId, client);
 
@@ -90,6 +91,7 @@ export class ProfileService {
   }
 
   async buildFullProfile(profile, executor) {
+    // Keep profile responses complete so the client does not need extra requests.
     const [skills, courses] = await Promise.all([
       this.userSkillRepository.findSkillsByProfileId(profile.profileId, executor),
       this.userCourseRepository.findCoursesByProfileId(profile.profileId, executor)

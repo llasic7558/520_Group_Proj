@@ -5,6 +5,7 @@ import { env } from "../config/env.js";
 import { createHttpError } from "../utils/http-error.js";
 
 function createBase64Url(input) {
+  // Base64url keeps token payloads URL-safe without extra encoding.
   return Buffer.from(input)
     .toString("base64")
     .replace(/\+/g, "-")
@@ -13,6 +14,7 @@ function createBase64Url(input) {
 }
 
 function decodeBase64Url(input) {
+  // Restore standard base64 padding before decoding the token payload.
   const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
   const padding = (4 - (normalized.length % 4)) % 4;
 

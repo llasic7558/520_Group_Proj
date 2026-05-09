@@ -1,9 +1,10 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import OpportunitiesPage from '../pages/OpportunitiesPage/OpportunitiesPage.jsx'
+import OpportunitiesPage from '../src/pages/OpportunitiesPage/OpportunitiesPage.jsx'
 import { mockJsonResponse, renderWithProviders } from './test-utils.jsx'
 
 const sampleListing = {
+  // Representative API listing used by feed, detail, and contact assertions.
   listingId: 'listing-1',
   createdByUserId: 'user-1',
   title: 'Campus Planner App',
